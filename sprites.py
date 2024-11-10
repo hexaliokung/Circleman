@@ -36,18 +36,21 @@ class Player(pg.sprite.Sprite):
             self.y += dy
 
     def collide_with_walls(self, dir):
+        # Check for collisions with both walls and visible obstacles
         if dir == "x":
-            hits = pg.sprite.spritecollide(self, self.game.walls, False)
+            hits = pg.sprite.spritecollide(self, self.game.walls, False) or \
+                   pg.sprite.spritecollide(self, self.game.obstacles, False)
             if hits:
                 if self.vel.x > 0:
                     self.pos.x = hits[0].rect.left - self.rect.width
-                if self.vel.x <0:
+                if self.vel.x < 0:
                     self.pos.x = hits[0].rect.right
                 self.vel.x = 0
                 self.rect.x = self.pos.x
 
         if dir == "y":
-            hits = pg.sprite.spritecollide(self, self.game.walls, False)
+            hits = pg.sprite.spritecollide(self, self.game.walls, False) or \
+                   pg.sprite.spritecollide(self, self.game.obstacles, False)
             if hits:
                 if self.vel.y > 0:
                     self.pos.y = hits[0].rect.top - self.rect.height
@@ -101,3 +104,38 @@ class Wall(pg.sprite.Sprite):
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
 # ------------------------------------------------------------------------
+
+class TimedObstacle(pg.sprite.Sprite):
+    def __init__(self, game, x, y, appear_time=2000, disappear_time=2000):
+        self.groups = game.all_sprites, game.obstacles
+        pg.sprite.Sprite.__init__(self, self.groups)
+        
+        self.game = game
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(RED)  # Initial color when visible
+        self.rect = self.image.get_rect()
+        self.rect.x = x * TILESIZE
+        self.rect.y = y * TILESIZE
+        
+        self.appear_time = appear_time
+        self.disappear_time = disappear_time
+        self.timer = 0
+        self.visible = True
+
+    def update(self):
+        # Update timer for visibility toggle
+        self.timer += self.game.dt * 1000  # Convert dt to milliseconds
+
+        # Toggle visibility and adjust collision based on visibility
+        if self.visible and self.timer >= self.appear_time:
+            self.visible = False
+            self.image.fill(BLACK)  # Change color to blend with the background
+            self.timer = 0
+            # Remove from obstacles group so it no longer blocks the player
+            self.game.obstacles.remove(self)
+        elif not self.visible and self.timer >= self.disappear_time:
+            self.visible = True
+            self.image.fill(RED)  # Change back to visible color
+            self.timer = 0
+            # Add back to obstacles group so it blocks the player
+            self.game.obstacles.add(self)

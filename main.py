@@ -99,6 +99,7 @@ class Game:
         self.all_sprites = pg.sprite.Group()
         # สร้างกลุ่มของกำแพง
         self.walls = pg.sprite.Group()
+        self.obstacles = pg.sprite.Group()
 
         # สร้างภาพตามไฟล์
         for row, tiles in enumerate(self.map.data):
@@ -107,6 +108,10 @@ class Game:
                     Wall(self, col, row)
                 if tile == "P": # ตำแหน่งเกิดผู้เล่น
                     self.player = Player(self, col, row)
+        
+        # TimedObstacle
+        TimedObstacle(self, 5, 5, appear_time=3000, disappear_time=2000)
+
         self.camera = Camera(self.map.width, self.map.height)
 # -----------------------------------------------------------------------------------------------
 

@@ -59,6 +59,17 @@ class Player(pg.sprite.Sprite):
     def update(self):
         self.get_keys()
         self.pos += self.vel * self.game.dt
+        
+        # Wrap around map boundaries
+        if self.pos.x < 0:
+            self.pos.x = (self.game.map.tilewidth - 1) * TILESIZE
+        elif self.pos.x > (self.game.map.tilewidth - 1) * TILESIZE:
+            self.pos.x = 0
+        if self.pos.y < 0:
+            self.pos.y = (self.game.map.tileheight - 1) * TILESIZE
+        elif self.pos.y > (self.game.map.tileheight - 1) * TILESIZE:
+            self.pos.y = 0
+        
         # อัปเดตตำแหน่งของผู้เล่นในกริดไปยังตำแหน่งจริงในพิกเซล
         self.rect.x = self.pos.x
         self.collide_with_walls("x")

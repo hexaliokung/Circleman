@@ -18,7 +18,7 @@ class Game:
         self.scr_display = pg.display.set_mode((WIDTH, HEIGHT))
         
         # ตั้งค่าชื่อของหน้าต่างเกม ซึ่งจะแสดงที่แถบด้านบนของหน้าต่าง
-        pg.display.set_caption("Sweet teacher")
+        pg.display.set_caption("Circle man")
 
         # ใช้สำหรับควบคุมความเร็วในการอัปเดตและการแสดงผลของเกม
         self.clock = pg.time.Clock()
@@ -52,16 +52,16 @@ class Game:
 # -------------------------------------------------------------------------------
 
     # method วาดตารางกริด
-    def draw_grid(self):
-        for x in range(0, WIDTH, TILESIZE):
-            pg.draw.line(self.scr_display, LIGHTGREY, (x,0), (x, HEIGHT))
-        for y in range(0, HEIGHT, TILESIZE):
-            pg.draw.line(self.scr_display, LIGHTGREY, (0,y), (WIDTH, y))
+    # def draw_grid(self):
+    #     for x in range(0, WIDTH, TILESIZE):
+    #         pg.draw.line(self.scr_display, LIGHTGREY, (x,0), (x, HEIGHT))
+    #     for y in range(0, HEIGHT, TILESIZE):
+    #         pg.draw.line(self.scr_display, LIGHTGREY, (0,y), (WIDTH, y))
 
     # method แสดงผล
     def draw(self):
         self.scr_display.fill("DARKGREY")
-        self.draw_grid()
+        # self.draw_grid()
         for sprite in self.all_sprites:
             self.scr_display.blit(sprite.image, self.camera.apply(sprite))
         pg.display.flip()

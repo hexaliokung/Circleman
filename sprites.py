@@ -9,7 +9,7 @@ class Player(pg.sprite.Sprite):
         self.groups = game.all_sprites
         pg.sprite.Sprite.__init__(self, self.groups)  # เพิ่มตัว Player เข้ากลุ่มสไปร์ท
         self.game = game  # เก็บข้อมูลอ้างอิงถึงอ็อบเจกต์เกมหลัก
-        self.image = pg.Surface((48, 48))
+        self.image = pg.Surface(((TILESIZE//4)*3, (TILESIZE//4)*3))
         self.image.fill(YELLOW)
         self.rect = self.image.get_rect()  # สร้างสี่เหลี่ยมล้อมรอบพื้นผิว
         self.vel = vec(0, 0)
@@ -93,7 +93,7 @@ class Wall(pg.sprite.Sprite):
         self.game = game    # เก็บข้อมูลอ้างอิงถึงอ็อบเจกต์เกมหลัก
 
         self.image = pg.Surface((TILESIZE, TILESIZE))   # สร้างพื้นผิวสี่เหลี่ยมขนาด 64 * 64 สำหรับกำแพง
-        self.image.fill(GREEN)                          # และเติมสีเขียวให้กับพื้นผิวของกำแพง
+        self.image.fill(BLACK)                          # และเติมสีเขียวให้กับพื้นผิวของกำแพง
 
         self.rect = self.image.get_rect()   # สร้างสี่เหลี่ยมล้อมรอบพื้นผิวเพื่อใช้งานหลายอย่างเช่น การตรวจจับการชนของวัตถุ
 
@@ -112,7 +112,7 @@ class TimedObstacle(pg.sprite.Sprite):
         
         self.game = game
         self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(RED)  # Initial color when visible
+        self.image.fill(BLACK)  # Initial color when visible
         self.rect = self.image.get_rect()
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
@@ -129,13 +129,14 @@ class TimedObstacle(pg.sprite.Sprite):
         # Toggle visibility and adjust collision based on visibility
         if self.visible and self.timer >= self.appear_time:
             self.visible = False
-            self.image.fill(BLACK)  # Change color to blend with the background
+            self.image.set_alpha(0)  # Make it invisible (transparent)
             self.timer = 0
             # Remove from obstacles group so it no longer blocks the player
             self.game.obstacles.remove(self)
         elif not self.visible and self.timer >= self.disappear_time:
             self.visible = True
-            self.image.fill(RED)  # Change back to visible color
+            self.image.set_alpha(255)  # Make it visible with BLACK color
+            self.image.fill(BLACK)     # Ensure it is black when visible
             self.timer = 0
             # Add back to obstacles group so it blocks the player
             self.game.obstacles.add(self)

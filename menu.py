@@ -4,16 +4,12 @@ from button import Button
 from main import start_game
 pygame.init()
 
-
-
 SCREEN = pygame.display.set_mode((1600, 960))
 pygame.display.set_caption("Menu")
 
 BG = pygame.image.load("img/background3.webp")  # เพิ่มรูปภาพ
 pg.mixer.music.load("img/1 - Adventure Begin.ogg")  # เพิ่มเสียง
 pg.mixer.music.play(-1)
-
-    
 
 def get_font(size): #ส่งคืนฟอนด์ในขนาดที่ต้องการ
     return pygame.font.Font("img/GAMEDAY.ttf", size)
@@ -63,6 +59,5 @@ def main_menu(): # สร้างหน้าจอเมนู
                     pygame.quit()
                     sys.exit()
             pygame.display.update()
-        
-        
+
 main_menu()

@@ -6,9 +6,10 @@ from sprites import *
 from settings import *
 from tilemap import *
 
-# ------------------------------------ สร้าง class Game ขึ้น ------------------------------------
+# Tle
 class Game:
-    # ------------------------------- default constructor -------------------------------
+    
+    # Tle
     def __init__(self):
 
         # เริ่มต้น pygame
@@ -32,28 +33,17 @@ class Game:
 
         self.load_data()
 
-    # -----------------------------------------------------------------------------------
-    def show_start_screen(self):
-        pass
-
+    # Tle
     def load_data(self):
         game_folder = path.dirname(__file__)
         img_folder = path.join(game_folder, "img")
         self.map = Map(path.join(game_folder, "map1.txt"))
         self.player_img = pg.image.load(path.join(img_folder, PLAYER_IMG)).convert_alpha()
 
-    def show_go_screen(self):
-        pass
-
-    # Exit
+    # Tle
     def quit(self):
         pg.quit()
         sys.exit()
-
-# -------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------
 
     # method วาดตารางกริด
     # def draw_grid(self):
@@ -62,6 +52,7 @@ class Game:
     #     for y in range(0, HEIGHT, TILESIZE):
     #         pg.draw.line(self.scr_display, LIGHTGREY, (0,y), (WIDTH, y))
 
+    # Tle
     def draw_text(self, text, size, color, x, y):
         font = pg.font.SysFont(None, size)
         text_surface = font.render(text, True, color)
@@ -69,55 +60,8 @@ class Game:
         text_rect.topleft = (x, y)
         self.scr_display.blit(text_surface, text_rect)
 
-    def draw(self):
-        self.scr_display.fill("DARKGREY")
-        for sprite in self.all_sprites:
-            self.scr_display.blit(sprite.image, self.camera.apply(sprite))
-
-        # แสดงคะแนนที่มุมบนซ้ายของหน้าจอ
-        self.draw_text(f"Score: {self.score}", 30, WHITE, 10, 10)
-
-        pg.display.flip()
-
-    # iya
-    def respawn_special_fruit(self):
-        # ลบผลไม้พิเศษที่มีอยู่ก่อน (ถ้ามี)
-        for fruit in self.fruits:
-            if isinstance(fruit, SpecialFruit):
-                fruit.kill()
-
-        # เลือกผลไม้ปกติแบบสุ่ม
-        regular_fruits = [fruit for fruit in self.fruits if not isinstance(fruit, SpecialFruit)]
-        if regular_fruits:
-            chosen_fruit = random.choice(regular_fruits)
-            chosen_fruit.kill()  # ลบผลไม้ปกติที่ถูกเลือก
-            # สร้างผลไม้พิเศษใหม่ที่ตำแหน่งของผลไม้ปกติที่ถูกลบ
-            SpecialFruit(self, chosen_fruit.rect.x // TILESIZE, chosen_fruit.rect.y // TILESIZE)
-        else:
-            print("No regular fruits available to replace.")
-
-
-    # method อัพเดทตำแหน่งของสไปร์ท
-    def update(self):
-        self.all_sprites.update()
-        self.camera.update(self.player)
-
-        # ตรวจจับการชนระหว่างผู้เล่นและผลไม้
-        hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
-        for hit in hits:
-            self.update_score(1)  # เพิ่มคะแนน 10 เมื่อชนกับผลไม้
-            if isinstance(hit, SpecialFruit):
-                # หากเก็บผลไม้พิเศษ
-                self.player.speed_boost = True  # เปิดการวิ่งเร็ว
-                self.player.boost_timer = 0  # รีเซ็ตเวลา
-                print("Speed Boost Activated!")
-                self.respawn_special_fruit()  # เรียกฟังก์ชันสร้างผลไม้พิเศษใหม่
-
-    def update_score(self, points):
-        self.score += points
-
-    # method อีเวนท์ต่างๆ
-    def events(self):
+    # Tle
+    def events(self):   # method อีเวนท์ต่างๆ
         # กดกาที่แถบด้านบนของหน้าต่างเพื่อออกเกม
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -127,7 +71,7 @@ class Game:
                 if event.key == pg.K_ESCAPE:    # กด Esc เพื่อออกเกม
                     self.quit()                 # เรียกใช้งาน method ออกเกม
 
-    # --------------------- สร้าง method run สำหรับรันเกม  ---------------------
+    # Tle
     def run(self):
         
         # ตราบใดที่ self.playing = True เกมก็จะยังทำงาน
@@ -137,8 +81,8 @@ class Game:
             self.events()
             self.update()
             self.draw()
-    # ----------------------------------------------------------------------
 
+    # Tle and Iya
     def new(self):
         # สร้างกลุ่มของสไปร์ททั้งหมด
         self.all_sprites = pg.sprite.Group()
@@ -159,21 +103,61 @@ class Game:
         # เริ่มต้นด้วยผลไม้พิเศษเพียงลูกเดียว
         self.respawn_special_fruit()
 
-        # TimedObstacle
+        # เรียกใช้ TimedObstacle
         TimedObstacle(self, 5, 5, appear_time=3000, disappear_time=2000)
 
         self.camera = Camera(self.map.width, self.map.height)
 
-# -----------------------------------------------------
+    # Tle and Iya
+    def update(self):   # method อัพเดทตำแหน่งของสไปร์ท
+        self.all_sprites.update()
+        self.camera.update(self.player)
 
-# ------------------ ส่วนของการรันเกม ------------------
-# เช็คว่าชื่อโมดูลปัจจุบัน (__name__) มีค่าเป็น '__main__' หรือไม่
-# ถ้าใช่ แสดงว่าไฟล์นี้ถูกเรียกใช้โดยตรง
+        # ตรวจจับการชนระหว่างผู้เล่นและผลไม้
+        hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
+        for hit in hits:
+            self.update_score(1)  # เพิ่มคะแนน 10 เมื่อชนกับผลไม้
+            if isinstance(hit, SpecialFruit):
+                # หากเก็บผลไม้พิเศษ
+                self.player.speed_boost = True  # เปิดการวิ่งเร็ว
+                self.player.boost_timer = 0  # รีเซ็ตเวลา
+                print("Speed Boost Activated!")
+                self.respawn_special_fruit()  # เรียกฟังก์ชันสร้างผลไม้พิเศษใหม่
 
-def start_game():
-    game = Game()   # สร้าง object game จาก class Game
+    # Tle and Iya
+    def draw(self):
+        self.scr_display.fill("DARKGREY")
+        for sprite in self.all_sprites:
+            self.scr_display.blit(sprite.image, self.camera.apply(sprite))
+
+        # แสดงคะแนนที่มุมบนซ้ายของหน้าจอ
+        self.draw_text(f"Score: {self.score}", 30, WHITE, 10, 10)
+
+        pg.display.flip()
+
+    # Iya
+    def respawn_special_fruit(self):
+        # ลบผลไม้พิเศษที่มีอยู่ก่อน (ถ้ามี)
+        for fruit in self.fruits:
+            if isinstance(fruit, SpecialFruit):
+                fruit.kill()
+
+        # เลือกผลไม้ปกติแบบสุ่ม
+        regular_fruits = [fruit for fruit in self.fruits if not isinstance(fruit, SpecialFruit)]
+        if regular_fruits:
+            chosen_fruit = random.choice(regular_fruits)
+            chosen_fruit.kill()  # ลบผลไม้ปกติที่ถูกเลือก
+            # สร้างผลไม้พิเศษใหม่ที่ตำแหน่งของผลไม้ปกติที่ถูกลบ
+            SpecialFruit(self, chosen_fruit.rect.x // TILESIZE, chosen_fruit.rect.y // TILESIZE)
+        else:
+            print("No regular fruits available to replace.")
+
+    # Iya
+    def update_score(self, points):
+        self.score += points
+
+# Tin
+def start_game(): # ฟังก์ชั่นเริ่มเกมที่จะถูกเรียกใน menu.py
+    game = Game()
     game.new()
     game.run()
-    
-
-# ----------------------------------------------------

@@ -3,11 +3,10 @@ import random
 from settings import *
 vec = pg.math.Vector2
 
-# ----------------------------- Player Class ---------------------
+# Tle and Iya
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
         pg.sprite.Sprite.__init__(self, game.all_sprites)  # เรียกใช้ constructor ของ Sprite โดยตรง
-        # existing code
         self.game = game
         self.image = pg.Surface(((TILESIZE // 4) * 3, (TILESIZE // 4) * 3))
         self.image.fill(YELLOW)
@@ -32,7 +31,6 @@ class Player(pg.sprite.Sprite):
             self.vel.y = -speed
         if keys[pg.K_DOWN] or keys[pg.K_s]:
             self.vel.y = speed
-        
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
 
@@ -68,13 +66,9 @@ class Player(pg.sprite.Sprite):
                     
     def update(self):
         self.get_keys()
-        if self.speed_boost:
-            # เพิ่มความเร็วเมื่อมี speed_boost
-            self.vel = self.vel * 1.1  # เพิ่มตัวคูณความเร็ว
         self.pos += self.vel * self.game.dt
         self.rect.x = self.pos.x
         self.collide_with_walls("x")
-
         self.rect.y = self.pos.y
         self.collide_with_walls("y")
 
@@ -86,7 +80,7 @@ class Player(pg.sprite.Sprite):
                 self.boost_timer = 0  # รีเซ็ต timer
 
 
-        # อัปเดตการ wrap ของตำแหน่งผู้เล่นในแผนที่
+        # หลุดแผนที่ย้ายไปทิศตรงข้าม
         if self.pos.x < 0:
             self.pos.x = (self.game.map.tilewidth - 1) * TILESIZE
         elif self.pos.x > (self.game.map.tilewidth - 1) * TILESIZE:
@@ -98,32 +92,24 @@ class Player(pg.sprite.Sprite):
 
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
-# ------------------------------------------------------------------------
 
-# ------------------------------ Wall Class ------------------------------
+# Tle
 class Wall(pg.sprite.Sprite):
     def __init__(self, game, x, y):
-
         # กำหนดกลุ่มสไปร์ทที่กำแพงจะถูกเพิ่มเข้าไป (ทั้ง all_sprites และ walls)
         self.groups = game.all_sprites, game.walls
-
         pg.sprite.Sprite.__init__(self, self.groups)    # เพิ่มตัว Wall เข้ากลุ่มสไปร์ท
-
         self.game = game    # เก็บข้อมูลอ้างอิงถึงอ็อบเจกต์เกมหลัก
-
         self.image = pg.Surface((TILESIZE, TILESIZE))   # สร้างพื้นผิวสี่เหลี่ยมขนาด 64 * 64 สำหรับกำแพง
         self.image.fill(BLACK)                          # และเติมสีเขียวให้กับพื้นผิวของกำแพง
-
         self.rect = self.image.get_rect()   # สร้างสี่เหลี่ยมล้อมรอบพื้นผิวเพื่อใช้งานหลายอย่างเช่น การตรวจจับการชนของวัตถุ
-
         self.x = x  # ตำแหน่ง X ของกำแพงในกริด
         self.y = y  # ตำแหน่ง Y ของกำแพงในกริด
-
         # อัปเดตตำแหน่งกำแพงในพิกเซลโดยคูณตำแหน่งในกริดด้วยขนาด TILESIZE
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
-# ------------------------------------------------------------------------
 
+# Tle
 class TimedObstacle(pg.sprite.Sprite):
     def __init__(self, game, x, y, appear_time=2000, disappear_time=2000):
         self.groups = game.all_sprites, game.obstacles
@@ -159,38 +145,40 @@ class TimedObstacle(pg.sprite.Sprite):
             self.timer = 0
             # Add back to obstacles group so it blocks the player
             self.game.obstacles.add(self)
-# ------------------------------------------------------------------------
-# Fruit class
+
+# Iya
 class Fruit(pg.sprite.Sprite):
     def __init__(self, game, x, y):
-        self.groups = game.all_sprites, game.fruits  # fruits group for collision detection
+
+        # เพิ่มเข้าสู่กลุ่มที่ใช้การตรวจจับการชนและการแสดงผล
+        self.groups = game.all_sprites, game.fruits # เพิ่มเข้ากลุ่มวัตถุ และกลุ่มผลไม้
         pg.sprite.Sprite.__init__(self, self.groups)
+
         self.game = game
         
-        # สร้างพื้นผิวสี่เหลี่ยมที่มีขนาดเท่ากับ TILESIZE
-        self.image = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA)  # เปิดใช้งานพื้นหลังว่างเปล่า
+        # สร้างพื้นผิวสี่เหลี่ยมที่มีขนาดเท่ากับ TILESIZE และเปิดใช้งานพื้นหลังโปร่งใส
+        self.image = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA)
+
+        # สร้างกรอบสี่เหลี่ยมเพื่อตรวจจับการชน
         self.rect = self.image.get_rect()
         
-        # ขนาดของวงกลมที่เล็กลงและตั้งตำแหน่งตรงกลางของ TILESIZE
+        # รัศมีของวงกลมคือ 1 ใน 4 ของขนาด TILESIZE
         small_radius = TILESIZE // 4
+
+        # วาดวงกลมสีเขียวอยู่ตรงกลางของ TILESIZE โดยมีขนาดรัสมี = small_radius
         pg.draw.circle(self.image, GREEN1, (TILESIZE // 2, TILESIZE // 2), small_radius)
 
-        # ตั้งค่าตำแหน่งของผลไม้ในกริด
+        # ตั้งค่าตำแหน่งของผลไม้ให้ตรงกับตำแหน่ง
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
 
+# Iya class SpecialFruit เป็นคลาสลูกของ class Fruit
 class SpecialFruit(Fruit):
     def __init__(self, game, x, y):
-        # เรียกใช้ constructor ของ Fruit
+        # เรียกใช้ constructor ของ Class Fruit
         super().__init__(game, x, y)
-        
-        # เปลี่ยนสีผลไม้พิเศษให้แตกต่างจากผลไม้ปกติ
-        self.image.fill(RED)  # ใช้สีที่แตกต่าง เช่น สีแดง
-        self.rect = self.image.get_rect()
-        
-        # ตั้งตำแหน่ง
-        self.rect.x = x * TILESIZE
-        self.rect.y = y * TILESIZE
 
-        # สุ่มระยะเวลาเพิ่มความเร็ว (เพิ่มความเร็ว 5 วินาที)
-        self.boost_time = 5000  # 5 วินาที
+        self.image.fill((0, 0, 0, 0))  # ล้างพื้นหลังให้โปร่งใส
+
+        # เปลี่ยนสีของวงกลมเป็นสีแดง และมีขนาด ใหญ่ขึ้นเล็กน้อย
+        pg.draw.circle(self.image, RED, (TILESIZE // 2, TILESIZE // 2), TILESIZE // 3)

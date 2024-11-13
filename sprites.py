@@ -3,7 +3,7 @@ import random
 from settings import *
 vec = pg.math.Vector2
 
-# ----------------------------- Player Class -----------------------------
+# ----------------------------- Player Class ---------------------
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
         pg.sprite.Sprite.__init__(self, game.all_sprites)  # เรียกใช้ constructor ของ Sprite โดยตรง

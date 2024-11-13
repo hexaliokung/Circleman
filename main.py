@@ -16,7 +16,7 @@ class Game:
 
         # หน้าต่างแสดงผลให้มีขนาด = WIDTH, HEIGHT
         self.scr_display = pg.display.set_mode((WIDTH, HEIGHT))
-        
+
         # ตั้งค่าชื่อของหน้าต่างเกม ซึ่งจะแสดงที่แถบด้านบนของหน้าต่าง
         pg.display.set_caption("Circle man")
 

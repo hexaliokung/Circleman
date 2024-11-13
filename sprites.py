@@ -70,7 +70,7 @@ class Player(pg.sprite.Sprite):
         self.get_keys()
         if self.speed_boost:
             # เพิ่มความเร็วเมื่อมี speed_boost
-            self.vel = self.vel * 1.5  # เพิ่มตัวคูณความเร็ว
+            self.vel = self.vel * 1.1  # เพิ่มตัวคูณความเร็ว
         self.pos += self.vel * self.game.dt
         self.rect.x = self.pos.x
         self.collide_with_walls("x")

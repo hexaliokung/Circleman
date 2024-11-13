@@ -105,7 +105,7 @@ class Game:
         # ตรวจจับการชนระหว่างผู้เล่นและผลไม้
         hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
         for hit in hits:
-            self.update_score(10)  # เพิ่มคะแนน 10 เมื่อชนกับผลไม้
+            self.update_score(1)  # เพิ่มคะแนน 10 เมื่อชนกับผลไม้
             if isinstance(hit, SpecialFruit):
                 # หากเก็บผลไม้พิเศษ
                 self.player.speed_boost = True  # เปิดการวิ่งเร็ว

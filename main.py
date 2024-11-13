@@ -27,7 +27,11 @@ class Game:
         # โปรแกรมจะรับรู้ว่าปุ่มถูกกดซ้ำตามช่วงเวลาที่กำหนด
         pg.key.set_repeat(100, 100) # (เวลารอตรวจจับกดปุ่มซ้ำหลังจากกดปุ่มค้างไว้, ตรวจจับว่ากดซ้ำเรื่อยๆในอีก...ตราบใดที่ยังกด)
 
+        # ตัวแปรคะแนน
+        self.score = 0
+
         self.load_data()
+
     # -----------------------------------------------------------------------------------
     def show_start_screen(self):
         pass
@@ -58,18 +62,36 @@ class Game:
     #     for y in range(0, HEIGHT, TILESIZE):
     #         pg.draw.line(self.scr_display, LIGHTGREY, (0,y), (WIDTH, y))
 
-    # method แสดงผล
+    def draw_text(self, text, size, color, x, y):
+        font = pg.font.SysFont(None, size)
+        text_surface = font.render(text, True, color)
+        text_rect = text_surface.get_rect()
+        text_rect.topleft = (x, y)
+        self.scr_display.blit(text_surface, text_rect)
+
     def draw(self):
         self.scr_display.fill("DARKGREY")
-        # self.draw_grid()
         for sprite in self.all_sprites:
             self.scr_display.blit(sprite.image, self.camera.apply(sprite))
+
+        # แสดงคะแนนที่มุมบนซ้ายของหน้าจอ
+        self.draw_text(f"Score: {self.score}", 30, WHITE, 10, 10)
+
         pg.display.flip()
+
 
     # method อัพเดทตำแหน่งของสไปร์ท
     def update(self):
         self.all_sprites.update()
         self.camera.update(self.player)
+
+        # ตรวจจับการชนระหว่างผู้เล่นและผลไม้
+        hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
+        for hit in hits:
+            self.update_score(10)  # เพิ่มคะแนน 10 เมื่อชนกับผลไม้
+
+    def update_score(self, points):
+        self.score += points
 
     # method อีเวนท์ต่างๆ
     def events(self):
@@ -100,19 +122,26 @@ class Game:
         # สร้างกลุ่มของกำแพง
         self.walls = pg.sprite.Group()
         self.obstacles = pg.sprite.Group()
+        # สร้างกลุ่มของผลไม้
+        self.fruits = pg.sprite.Group()
 
         # สร้างภาพตามไฟล์
         for row, tiles in enumerate(self.map.data):
             for col, tile in enumerate(tiles):
                 if tile == "1": # ตำแหน่งเกิดกำแพง
                     Wall(self, col, row)
-                if tile == "P": # ตำแหน่งเกิดผู้เล่น
-                    self.player = Player(self, col, row)
-        
+                elif tile == "P": # ตำแหน่งเกิดผู้เล่น
+                    self.player = Player(self, col, row)  # สร้างผู้เล่น
+
+                # ถ้าตำแหน่ง = 2 คือสร้างผลไม้
+                elif tile == "2":  # ผลไม้
+                    Fruit(self, col, row)
+
         # TimedObstacle
         TimedObstacle(self, 5, 5, appear_time=3000, disappear_time=2000)
 
         self.camera = Camera(self.map.width, self.map.height)
+
 # -----------------------------------------------------------------------------------------------
 
 # ------------------ ส่วนของการรันเกม ------------------

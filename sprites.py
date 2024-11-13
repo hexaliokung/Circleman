@@ -78,7 +78,6 @@ class Player(pg.sprite.Sprite):
         self.collide_with_walls("x")
         self.rect.y = self.pos.y
         self.collide_with_walls("y")
-
 # ------------------------------------------------------------------------
 
 # ------------------------------ Wall Class ------------------------------
@@ -140,3 +139,22 @@ class TimedObstacle(pg.sprite.Sprite):
             self.timer = 0
             # Add back to obstacles group so it blocks the player
             self.game.obstacles.add(self)
+# ------------------------------------------------------------------------
+# Fruit class
+class Fruit(pg.sprite.Sprite):
+    def __init__(self, game, x, y):
+        self.groups = game.all_sprites, game.fruits  # fruits group for collision detection
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        
+        # สร้างพื้นผิวสี่เหลี่ยมที่มีขนาดเท่ากับ TILESIZE
+        self.image = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA)  # เปิดใช้งานพื้นหลังว่างเปล่า
+        self.rect = self.image.get_rect()
+        
+        # ขนาดของวงกลมที่เล็กลงและตั้งตำแหน่งตรงกลางของ TILESIZE
+        small_radius = TILESIZE // 4
+        pg.draw.circle(self.image, GREEN1, (TILESIZE // 2, TILESIZE // 2), small_radius)
+
+        # ตั้งค่าตำแหน่งของผลไม้ในกริด
+        self.rect.x = x * TILESIZE
+        self.rect.y = y * TILESIZE

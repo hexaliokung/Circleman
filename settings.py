@@ -4,11 +4,13 @@ from pygame.math import Vector2 as vec
 # สีต่างๆ (R, G, B)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-DARKGREY = (40, 40, 40)
+DARKGREY = (30, 30, 40)
 LIGHTGREY = (100, 100, 100)
 GREEN = (0, 255, 0)
+GREEN1 = (173, 255, 47)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
+ORANGE = (255, 165, 0)
 
 # game settings
 WIDTH = 1600   # 16 * 100 or 32 * 50 or 64 * 25

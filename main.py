@@ -79,6 +79,23 @@ class Game:
 
         pg.display.flip()
 
+    # iya
+    def respawn_special_fruit(self):
+        # ลบผลไม้พิเศษที่มีอยู่ก่อน (ถ้ามี)
+        for fruit in self.fruits:
+            if isinstance(fruit, SpecialFruit):
+                fruit.kill()
+
+        # เลือกผลไม้ปกติแบบสุ่ม
+        regular_fruits = [fruit for fruit in self.fruits if not isinstance(fruit, SpecialFruit)]
+        if regular_fruits:
+            chosen_fruit = random.choice(regular_fruits)
+            chosen_fruit.kill()  # ลบผลไม้ปกติที่ถูกเลือก
+            # สร้างผลไม้พิเศษใหม่ที่ตำแหน่งของผลไม้ปกติที่ถูกลบ
+            SpecialFruit(self, chosen_fruit.rect.x // TILESIZE, chosen_fruit.rect.y // TILESIZE)
+        else:
+            print("No regular fruits available to replace.")
+
 
     # method อัพเดทตำแหน่งของสไปร์ท
     def update(self):
@@ -89,6 +106,12 @@ class Game:
         hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
         for hit in hits:
             self.update_score(10)  # เพิ่มคะแนน 10 เมื่อชนกับผลไม้
+            if isinstance(hit, SpecialFruit):
+                # หากเก็บผลไม้พิเศษ
+                self.player.speed_boost = True  # เปิดการวิ่งเร็ว
+                self.player.boost_timer = 0  # รีเซ็ตเวลา
+                print("Speed Boost Activated!")
+                self.respawn_special_fruit()  # เรียกฟังก์ชันสร้างผลไม้พิเศษใหม่
 
     def update_score(self, points):
         self.score += points
@@ -119,23 +142,22 @@ class Game:
     def new(self):
         # สร้างกลุ่มของสไปร์ททั้งหมด
         self.all_sprites = pg.sprite.Group()
-        # สร้างกลุ่มของกำแพง
         self.walls = pg.sprite.Group()
         self.obstacles = pg.sprite.Group()
-        # สร้างกลุ่มของผลไม้
         self.fruits = pg.sprite.Group()
 
         # สร้างภาพตามไฟล์
         for row, tiles in enumerate(self.map.data):
             for col, tile in enumerate(tiles):
-                if tile == "1": # ตำแหน่งเกิดกำแพง
+                if tile == "1":  # กำแพง
                     Wall(self, col, row)
-                elif tile == "P": # ตำแหน่งเกิดผู้เล่น
-                    self.player = Player(self, col, row)  # สร้างผู้เล่น
-
-                # ถ้าตำแหน่ง = 2 คือสร้างผลไม้
-                elif tile == "2":  # ผลไม้
+                elif tile == "P":  # ผู้เล่น
+                    self.player = Player(self, col, row)
+                elif tile == "2":  # ผลไม้ปกติ
                     Fruit(self, col, row)
+
+        # เริ่มต้นด้วยผลไม้พิเศษเพียงลูกเดียว
+        self.respawn_special_fruit()
 
         # TimedObstacle
         TimedObstacle(self, 5, 5, appear_time=3000, disappear_time=2000)

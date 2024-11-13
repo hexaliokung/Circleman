@@ -1,31 +1,38 @@
 import pygame as pg
+import random
 from settings import *
 vec = pg.math.Vector2
 
 # ----------------------------- Player Class -----------------------------
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
-        # กำหนดกลุ่มสไปร์ทที่ผู้เล่นจะถูกเพิ่มเข้าไป
-        self.groups = game.all_sprites
-        pg.sprite.Sprite.__init__(self, self.groups)  # เพิ่มตัว Player เข้ากลุ่มสไปร์ท
-        self.game = game  # เก็บข้อมูลอ้างอิงถึงอ็อบเจกต์เกมหลัก
-        self.image = pg.Surface(((TILESIZE//4)*3, (TILESIZE//4)*3))
+        pg.sprite.Sprite.__init__(self, game.all_sprites)  # เรียกใช้ constructor ของ Sprite โดยตรง
+        # existing code
+        self.game = game
+        self.image = pg.Surface(((TILESIZE // 4) * 3, (TILESIZE // 4) * 3))
         self.image.fill(YELLOW)
-        self.rect = self.image.get_rect()  # สร้างสี่เหลี่ยมล้อมรอบพื้นผิว
+        self.rect = self.image.get_rect()
         self.vel = vec(0, 0)
         self.pos = vec(x, y) * TILESIZE
+        self.speed_boost = False
+        self.boost_timer = 0
+        self.boost_time = 5000  # Default boost time of 5 seconds
 
     def get_keys(self):
         self.vel = vec(0, 0)
         keys = pg.key.get_pressed()
+
+        # ถ้ามีการเพิ่มความเร็ว (speed boost) ให้ตัวละครเคลื่อนที่เร็วขึ้น
+        speed = PLAYER_SPEED * 1.5 if self.speed_boost else PLAYER_SPEED  # ถ้ากำลังมีความเร็วเพิ่มจะวิ่งเร็วขึ้น
         if keys[pg.K_LEFT] or keys[pg.K_a]:
-            self.vel.x = -PLAYER_SPEED
+            self.vel.x = -speed
         if keys[pg.K_RIGHT] or keys[pg.K_d]:
-            self.vel.x = PLAYER_SPEED
+            self.vel.x = speed
         if keys[pg.K_UP] or keys[pg.K_w]:
-            self.vel.y = -PLAYER_SPEED
+            self.vel.y = -speed
         if keys[pg.K_DOWN] or keys[pg.K_s]:
-            self.vel.y = PLAYER_SPEED
+            self.vel.y = speed
+        
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
 
@@ -58,12 +65,28 @@ class Player(pg.sprite.Sprite):
                     self.pos.y = hits[0].rect.bottom
                 self.vel.y = 0
                 self.rect.y = self.pos.y
-
+                    
     def update(self):
         self.get_keys()
+        if self.speed_boost:
+            # เพิ่มความเร็วเมื่อมี speed_boost
+            self.vel = self.vel * 1.5  # เพิ่มตัวคูณความเร็ว
         self.pos += self.vel * self.game.dt
-        
-        # Wrap around map boundaries
+        self.rect.x = self.pos.x
+        self.collide_with_walls("x")
+
+        self.rect.y = self.pos.y
+        self.collide_with_walls("y")
+
+        # ลดเวลา speed_boost ลง
+        if self.speed_boost:
+            self.boost_timer += self.game.dt * 1000  # คำนวณเวลาเพิ่มในมิลลิวินาที
+            if self.boost_timer >= self.boost_time:
+                self.speed_boost = False  # ปิด speed_boost เมื่อหมดเวลา
+                self.boost_timer = 0  # รีเซ็ต timer
+
+
+        # อัปเดตการ wrap ของตำแหน่งผู้เล่นในแผนที่
         if self.pos.x < 0:
             self.pos.x = (self.game.map.tilewidth - 1) * TILESIZE
         elif self.pos.x > (self.game.map.tilewidth - 1) * TILESIZE:
@@ -72,12 +95,9 @@ class Player(pg.sprite.Sprite):
             self.pos.y = (self.game.map.tileheight - 1) * TILESIZE
         elif self.pos.y > (self.game.map.tileheight - 1) * TILESIZE:
             self.pos.y = 0
-        
-        # อัปเดตตำแหน่งของผู้เล่นในกริดไปยังตำแหน่งจริงในพิกเซล
+
         self.rect.x = self.pos.x
-        self.collide_with_walls("x")
         self.rect.y = self.pos.y
-        self.collide_with_walls("y")
 # ------------------------------------------------------------------------
 
 # ------------------------------ Wall Class ------------------------------
@@ -158,3 +178,19 @@ class Fruit(pg.sprite.Sprite):
         # ตั้งค่าตำแหน่งของผลไม้ในกริด
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
+
+class SpecialFruit(Fruit):
+    def __init__(self, game, x, y):
+        # เรียกใช้ constructor ของ Fruit
+        super().__init__(game, x, y)
+        
+        # เปลี่ยนสีผลไม้พิเศษให้แตกต่างจากผลไม้ปกติ
+        self.image.fill(RED)  # ใช้สีที่แตกต่าง เช่น สีแดง
+        self.rect = self.image.get_rect()
+        
+        # ตั้งตำแหน่ง
+        self.rect.x = x * TILESIZE
+        self.rect.y = y * TILESIZE
+
+        # สุ่มระยะเวลาเพิ่มความเร็ว (เพิ่มความเร็ว 5 วินาที)
+        self.boost_time = 5000  # 5 วินาที

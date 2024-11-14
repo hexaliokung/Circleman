@@ -135,12 +135,12 @@ class Game:
         hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
         for hit in hits:
             self.update_score(1)    # เพิ่มคะแนน 1 เมื่อชนกับผลไม้
+
+            # ใน update function ของ Game class
             if isinstance(hit, SpecialFruit):
-                # หากเก็บผลไม้พิเศษ
-                self.player.speed_boost = True  # เปิดการวิ่งเร็ว
-                self.player.boost_timer = 0  # รีเซ็ตเวลา
-                print("Speed Boost Activated!")
-                self.respawn_special_fruit()  # เรียกฟังก์ชันสร้างผลไม้พิเศษใหม่
+                hit.apply_effect(self.player)
+                print(f"Special effect activated: {hit.effect_type}")
+                self.respawn_special_fruit()
 
     # Tle and Iya
     def draw(self):

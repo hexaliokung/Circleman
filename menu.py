@@ -35,6 +35,7 @@ def main_menu(): # สร้างหน้าจอเมนู
 
         MENU_TEXT = get_font(130).render("CIRCLE-MAN", True, "#FF9966")
         MENU_RECT = MENU_TEXT.get_rect(center=(820, 300))
+
         # สร้างปุ่ม play และ quit
         PLAY_BUTTON = Button(image=pygame.image.load("img/menu_inv_button.png"), pos=(820, 500),     
                             text_input="PLAY", font=get_font(50), base_color="#FF9966", hovering_color="White")
@@ -59,5 +60,4 @@ def main_menu(): # สร้างหน้าจอเมนู
                     pygame.quit()
                     sys.exit()
             pygame.display.update()
-
 main_menu()

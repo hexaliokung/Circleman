@@ -20,8 +20,8 @@ class Player(pg.sprite.Sprite):
         self.vel = vec(0, 0)
         keys = pg.key.get_pressed()
 
-        # ถ้ามีการเพิ่มความเร็ว (speed boost) ให้ตัวละครเคลื่อนที่เร็วขึ้น
-        speed = PLAYER_SPEED * 1.5 if self.speed_boost else PLAYER_SPEED  # ถ้ากำลังมีความเร็วเพิ่มจะวิ่งเร็วขึ้น
+        # ปรับตัวคูณความเร็วตาม speed_multiplier
+        speed = PLAYER_SPEED * (self.speed_multiplier if self.speed_boost else 1)
         if keys[pg.K_LEFT] or keys[pg.K_a]:
             self.vel.x = -speed
         if keys[pg.K_RIGHT] or keys[pg.K_d]:
@@ -182,7 +182,21 @@ class SpecialFruit(Fruit):
         # เปลี่ยนสีของวงกลมเป็นสีแดง และมีขนาด ใหญ่ขึ้นเล็กน้อย
         pg.draw.circle(self.image, RED, (TILESIZE // 2, TILESIZE // 2), TILESIZE // 3)
 
+        # สุ่มเอฟเฟกต์เป็นเพิ่มหรือลดความเร็ว
+        self.effect_type = random.choice(["speed_up", "speed_down"])
+        self.boost_time = 5000  # ระยะเวลาผลของเอฟเฟกต์ 5 วินาที
 
+    def apply_effect(self, player):
+        if self.effect_type == "speed_up":
+            player.speed_boost = True
+            player.boost_timer = 0
+            player.speed_multiplier = 1.5  # เพิ่มความเร็ว
+        elif self.effect_type == "speed_down":
+            player.speed_boost = True
+            player.boost_timer = 0
+            player.speed_multiplier = 0.5  # ลดความเร็ว
+
+# Pao
 class Ghost(pg.sprite.Sprite):
     def __init__(self, game, x, y, image, color, speed):
         super().__init__()
@@ -237,6 +251,7 @@ class Ghost(pg.sprite.Sprite):
         """ทำให้ผีตาย"""
         self.kill()
 
+# Pao
 class Blinky(Ghost):
     def __init__(self, game, x, y):  # ผีแดง
         blinky_img = pg.transform.scale(pg.image.load('img/red.png'), (TILESIZE, TILESIZE))
@@ -246,6 +261,7 @@ class Blinky(Ghost):
         self.follow_player(self.game.player)  # ทำให้ผีบลินกี้ตามผู้เล่น
         super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
 
+# Pao
 class Pinky(Ghost):
     def __init__(self, game, x, y):  # ผีชมพู
         pinky_img = pg.transform.scale(pg.image.load('img/pink.png'), (TILESIZE, TILESIZE))
@@ -255,6 +271,7 @@ class Pinky(Ghost):
         self.follow_player(self.game.player)  # ทำให้ผีพิงกี้ตามผู้เล่น
         super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
 
+# Pao
 class Inky(Ghost):
     def __init__(self, game, x, y): # ผีฟ้า
 
@@ -265,6 +282,7 @@ class Inky(Ghost):
         self.follow_player(self.game.player)  # ทำให้ผีอินกี้ตามผู้เล่น
         super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
 
+# Pao
 class Clyde(Ghost):
     def __init__(self, game, x, y):  # ผีส้ม
         clyde_img = pg.transform.scale(pg.image.load('img/orange.png'), (TILESIZE, TILESIZE))
@@ -273,4 +291,3 @@ class Clyde(Ghost):
     def update(self):
         self.follow_player(self.game.player)  # ทำให้ผีคลายด์ตามผู้เล่น
         super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
-

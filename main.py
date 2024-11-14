@@ -89,6 +89,7 @@ class Game:
         self.walls = pg.sprite.Group()
         self.obstacles = pg.sprite.Group()
         self.fruits = pg.sprite.Group()
+        self.ghosts = pg.sprite.Group()  # กลุ่มผี
 
         # สร้างภาพตามไฟล์
         for row, tiles in enumerate(self.map.data):
@@ -99,6 +100,22 @@ class Game:
                     self.player = Player(self, col, row)
                 elif tile == "2":  # ผลไม้ปกติ
                     Fruit(self, col, row)
+                elif tile == "B":  # ผีแดง (Blinky)
+                    ghost = Blinky(self, col * TILESIZE, row * TILESIZE)
+                    self.ghosts.add(ghost)  # เพิ่ม Blinky ในกลุ่มผี
+                    self.all_sprites.add(ghost)  # เพิ่ม Blinky ในกลุ่มสไปร์ททั้งหมด
+                elif tile == "W":  # ผีชมพู (Pinky)
+                    ghost = Pinky(self, col * TILESIZE, row * TILESIZE)
+                    self.ghosts.add(ghost)  # เพิ่ม Pinky ในกลุ่มผี
+                    self.all_sprites.add(ghost)  # เพิ่ม Pinky ในกลุ่มสไปร์ททั้งหมด
+                elif tile == "I":  # ผีฟ้า (Inky)
+                    ghost = Inky(self, col * TILESIZE, row * TILESIZE)
+                    self.ghosts.add(ghost)  # เพิ่ม Inky ในกลุ่มผี
+                    self.all_sprites.add(ghost)  # เพิ่ม Inky ในกลุ่มสไปร์ททั้งหมด
+                elif tile == "C":  # ผีส้ม (Clyde)
+                    ghost = Clyde(self, col * TILESIZE, row * TILESIZE)
+                    self.ghosts.add(ghost)  # เพิ่ม Clyde ในกลุ่มผี
+                    self.all_sprites.add(ghost)  # เพิ่ม Clyde ในกลุ่มสไปร์ททั้งหมด
 
         # เริ่มต้นด้วยผลไม้พิเศษเพียงลูกเดียว
         self.respawn_special_fruit()
@@ -112,6 +129,7 @@ class Game:
     def update(self):   # method อัพเดทตำแหน่งของสไปร์ท
         self.all_sprites.update()
         self.camera.update(self.player)
+        self.ghosts.update()  # อัปเดตผี
 
         # ตรวจจับการชนระหว่างผู้เล่นและผลไม้
         hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว

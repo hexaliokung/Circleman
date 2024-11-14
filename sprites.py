@@ -2,7 +2,6 @@ import pygame as pg
 import random
 from settings import *
 vec = pg.math.Vector2
-
 # Tle and Iya
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -182,3 +181,96 @@ class SpecialFruit(Fruit):
 
         # เปลี่ยนสีของวงกลมเป็นสีแดง และมีขนาด ใหญ่ขึ้นเล็กน้อย
         pg.draw.circle(self.image, RED, (TILESIZE // 2, TILESIZE // 2), TILESIZE // 3)
+
+
+class Ghost(pg.sprite.Sprite):
+    def __init__(self, game, x, y, image, color, speed):
+        super().__init__()
+        self.game = game
+        self.image = image
+        self.color = color
+        self.rect = self.image.get_rect()
+        self.pos = vec(x, y) * TILESIZE  # ใช้ vec สำหรับการคำนวณตำแหน่ง
+        self.speed = speed / 2  # ปรับความเร็วให้ช้าลง (อาจปรับค่าตามต้องการ)
+        self.health = 100
+
+    def update(self):
+        self.draw_health_bar()
+        self.follow_player(self.game.player)
+        self.rect.topleft = self.pos  # อัปเดตตำแหน่งตาม `pos`
+    
+    def follow_player(self, player):
+        """ทำให้ผีเคลื่อนที่ไปหาผู้เล่นและตรวจสอบการชนกำแพง"""
+        direction = vec(0, 0)
+        
+        # คำนวณทิศทางที่ผีจะเคลื่อนไปหาผู้เล่น
+        if self.pos.x < player.pos.x:
+            direction.x = self.speed
+        elif self.pos.x > player.pos.x:
+            direction.x = -self.speed
+        if self.pos.y < player.pos.y:
+            direction.y = self.speed
+        elif self.pos.y > player.pos.y:
+            direction.y = -self.speed
+
+
+    def draw_health_bar(self):#แสดงแถบพลังชีวิตของผี
+        bar_width = 50
+        bar_height = 5
+        fill = (self.health / 100) * bar_width
+        bar = pg.Rect(self.rect.x, self.rect.y - 10, bar_width, bar_height)
+        fill_rect = pg.Rect(self.rect.x, self.rect.y - 10, fill, bar_height)
+    
+        # วาดแถบพลังชีวิต
+        pg.draw.rect(self.game.scr_display, (255, 0, 0), bar)  # ใช้ self.game.scr_display แทน self.game.screen
+        pg.draw.rect(self.game.scr_display, (0, 255, 0), fill_rect)  # ใช้ self.game.scr_display แทน self.game.screen
+
+
+
+    def take_damage(self, amount):
+        """ลดพลังชีวิตของผี"""
+        self.health -= amount
+        if self.health <= 0:
+            self.die()
+
+    def die(self):
+        """ทำให้ผีตาย"""
+        self.kill()
+
+class Blinky(Ghost):
+    def __init__(self, game, x, y):  # ผีแดง
+        blinky_img = pg.transform.scale(pg.image.load('img/red.png'), (TILESIZE, TILESIZE))
+        super().__init__(game, x, y, blinky_img, "red", speed=2)
+
+    def update(self):
+        self.follow_player(self.game.player)  # ทำให้ผีบลินกี้ตามผู้เล่น
+        super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
+
+class Pinky(Ghost):
+    def __init__(self, game, x, y):  # ผีชมพู
+        pinky_img = pg.transform.scale(pg.image.load('img/pink.png'), (TILESIZE, TILESIZE))
+        super().__init__(game, x, y, pinky_img, "pink", speed=2)
+
+    def update(self):
+        self.follow_player(self.game.player)  # ทำให้ผีพิงกี้ตามผู้เล่น
+        super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
+
+class Inky(Ghost):
+    def __init__(self, game, x, y): # ผีฟ้า
+
+        inky_img = pg.transform.scale(pg.image.load('img/blue.png'), (TILESIZE, TILESIZE))
+        super().__init__(game, x, y, inky_img, "blue", speed=2)
+
+    def update(self):
+        self.follow_player(self.game.player)  # ทำให้ผีอินกี้ตามผู้เล่น
+        super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
+
+class Clyde(Ghost):
+    def __init__(self, game, x, y):  # ผีส้ม
+        clyde_img = pg.transform.scale(pg.image.load('img/orange.png'), (TILESIZE, TILESIZE))
+        super().__init__(game, x, y, clyde_img, "orange", speed=2)
+
+    def update(self):
+        self.follow_player(self.game.player)  # ทำให้ผีคลายด์ตามผู้เล่น
+        super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
+

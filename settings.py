@@ -24,3 +24,12 @@ GRIDHEIGHT = HEIGHT / TILESIZE
 # Player settings
 PLAYER_SPEED = 250
 PLAYER_IMG = "betty.png"
+
+# ขนาดของ TILESIZE ที่ใช้ใน settings.py
+from settings import TILESIZE
+
+# โหลดและปรับขนาดภาพผีทั้ง 4 ตัว
+blinky_img = pg.transform.scale(pg.image.load('img/red.png'), (TILESIZE, TILESIZE))
+pinky_img = pg.transform.scale(pg.image.load('img/pink.png'), (TILESIZE, TILESIZE))
+inky_img = pg.transform.scale(pg.image.load('img/blue.png'), (TILESIZE, TILESIZE))
+clyde_img = pg.transform.scale(pg.image.load('img/orange.png'), (TILESIZE, TILESIZE))

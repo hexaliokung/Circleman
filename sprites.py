@@ -151,24 +151,24 @@ class Fruit(pg.sprite.Sprite):
     def __init__(self, game, x, y):
 
         # เพิ่มเข้าสู่กลุ่มที่ใช้การตรวจจับการชนและการแสดงผล
-        self.groups = game.all_sprites, game.fruits # เพิ่มเข้ากลุ่มวัตถุ และกลุ่มผลไม้
+        self.groups = game.all_sprites, game.fruits # เพิ่มผลไม้ เข้ากลุ่มวัตถุของเกม และกลุ่มวัตถุของผลไม้
         pg.sprite.Sprite.__init__(self, self.groups)
 
         self.game = game
-        
-        # สร้างพื้นผิวสี่เหลี่ยมที่มีขนาดเท่ากับ TILESIZE และเปิดใช้งานพื้นหลังโปร่งใส
+
+        # สร้างหน้าตาให้เป็ฯสี่เหลี่ยมขนาดเท่า TILESIZE และเปิดใช้งานพื้นหลังโปร่งใส
         self.image = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA)
 
         # สร้างกรอบสี่เหลี่ยมเพื่อตรวจจับการชน
         self.rect = self.image.get_rect()
-        
+
         # รัศมีของวงกลมคือ 1 ใน 4 ของขนาด TILESIZE
         small_radius = TILESIZE // 4
 
         # วาดวงกลมสีเขียวอยู่ตรงกลางของ TILESIZE โดยมีขนาดรัสมี = small_radius
         pg.draw.circle(self.image, GREEN1, (TILESIZE // 2, TILESIZE // 2), small_radius)
 
-        # ตั้งค่าตำแหน่งของผลไม้ให้ตรงกับตำแหน่ง
+        # ตั้งค่าตำแหน่งของผลไม้ให้ตรงกับตำแหน่งในแผนที่
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
 

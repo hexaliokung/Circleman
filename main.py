@@ -8,7 +8,7 @@ from tilemap import *
 
 # Tle
 class Game:
-    
+
     # Tle
     def __init__(self):
 
@@ -113,10 +113,10 @@ class Game:
         self.all_sprites.update()
         self.camera.update(self.player)
 
-        # ตรวจจับการชนระหว่างผู้เล่นและผลไม้
+        # Iya ตรวจจับการชนระหว่างผู้เล่นและผลไม้
         hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
         for hit in hits:
-            self.update_score(1)  # เพิ่มคะแนน 10 เมื่อชนกับผลไม้
+            self.update_score(1)    # เพิ่มคะแนน 1 เมื่อชนกับผลไม้
             if isinstance(hit, SpecialFruit):
                 # หากเก็บผลไม้พิเศษ
                 self.player.speed_boost = True  # เปิดการวิ่งเร็ว
@@ -130,26 +130,24 @@ class Game:
         for sprite in self.all_sprites:
             self.scr_display.blit(sprite.image, self.camera.apply(sprite))
 
-        # แสดงคะแนนที่มุมบนซ้ายของหน้าจอ
+        # Iya แสดงคะแนนที่มุมบนซ้ายของหน้าจอ
         self.draw_text(f"Score: {self.score}", 30, WHITE, 10, 10)
 
         pg.display.flip()
 
     # Iya
     def respawn_special_fruit(self):
-        # ลบผลไม้พิเศษที่มีอยู่ก่อน (ถ้ามี)
-        for fruit in self.fruits:
-            if isinstance(fruit, SpecialFruit):
-                fruit.kill()
 
         # เลือกผลไม้ปกติแบบสุ่ม
         regular_fruits = [fruit for fruit in self.fruits if not isinstance(fruit, SpecialFruit)]
         if regular_fruits:
             chosen_fruit = random.choice(regular_fruits)
             chosen_fruit.kill()  # ลบผลไม้ปกติที่ถูกเลือก
-            # สร้างผลไม้พิเศษใหม่ที่ตำแหน่งของผลไม้ปกติที่ถูกลบ
+
+            # สร้างผลไม้พิเศษในตำแหน่งที่ถูกลบ
             SpecialFruit(self, chosen_fruit.rect.x // TILESIZE, chosen_fruit.rect.y // TILESIZE)
         else:
+            # ระบบทดสอบว่าถ้าผลไม้ปกติหมดผลไม้พิเศษจะไม่เกิดอีก
             print("No regular fruits available to replace.")
 
     # Iya

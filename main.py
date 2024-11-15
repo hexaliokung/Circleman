@@ -1,6 +1,7 @@
 import pygame as pg # pg ย่อมาจาก pygame
 import sys
 from os import path
+
 # import file
 from sprites import *
 from settings import *
@@ -138,20 +139,51 @@ class Game:
 
             # ใน update function ของ Game class
             if isinstance(hit, SpecialFruit):
+
+                # ใช้เอฟเฟกต์ผลไม้พิเศษกับผู้เล่น
                 hit.apply_effect(self.player)
                 print(f"Special effect activated: {hit.effect_type}")
+
+                # สร้างผลไม้พิเศษใหม่
                 self.respawn_special_fruit()
 
-    # Tle and Iya
+        # Tin ตรวจจับการชนระหว่างผู้เล่นและผี
+        ghost_hits = pg.sprite.spritecollide(self.player, self.ghosts, False)  # False ไม่ลบผี
+        if ghost_hits and self.player.alive:
+            self.player.take_damage()  # ลดจำนวนชีวิตของผู้เล่น
+            print(f"Player hit by ghost! Lives remaining: {self.player.lives}")
+
+    # Tle and Iya and Tin
     def draw(self):
         self.scr_display.fill("DARKGREY")
         for sprite in self.all_sprites:
             self.scr_display.blit(sprite.image, self.camera.apply(sprite))
 
-        # Iya แสดงคะแนนที่มุมบนซ้ายของหน้าจอ
-        self.draw_text(f"Score: {self.score}", 30, WHITE, 10, 10)
+        # Iya แสดงคะแนนที่มุมบนขวาของหน้าจอ
+        self.draw_text(f"Score: {self.score}", 30, WHITE, WIDTH - 150, 10)  # เลื่อน x ไปที่ WIDTH - 150
 
+        # Tin วาดหัวใจ
+        self.draw_hearts()
         pg.display.flip()
+
+    # Tin
+    def draw_hearts(self):
+        """แสดงหัวใจที่มุมซ้ายบนตามจำนวนชีวิตที่เหลือของผู้เล่น"""
+        heart_image = pg.image.load('img/heart.png').convert_alpha()  # โหลดรูปภาพหัวใจ
+        heart_image = pg.transform.scale(heart_image, (30, 30))  # ปรับขนาดหัวใจให้เล็กลง
+
+        for i in range(self.player.lives):
+            self.scr_display.blit(heart_image, (10 + i * 40, 10))  # วาดหัวใจโดยเว้นระยะห่าง 40 พิกเซล
+
+    # Tin
+    def player_died(self):
+        """จัดการเมื่อผู้เล่นตาย"""
+        if self.player.lives > 0:
+            # ถ้ายังมีชีวิตเหลือ ให้เกิดใหม่ที่ตำแหน่งเริ่มต้น
+            self.player.respawn(5, 5)  # ตำแหน่งเริ่มต้น
+        else:
+            print("Game Over")  # แสดงข้อความเมื่อเกมจบ
+            self.playing = False  # จบเกม
 
     # Iya
     def respawn_special_fruit(self):

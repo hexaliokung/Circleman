@@ -2,7 +2,7 @@ import pygame as pg
 import random
 from settings import *
 vec = pg.math.Vector2
-# Tle and Iya
+# Tle and Iya and Tin
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
         pg.sprite.Sprite.__init__(self, game.all_sprites)  # เรียกใช้ constructor ของ Sprite โดยตรง
@@ -15,6 +15,11 @@ class Player(pg.sprite.Sprite):
         self.speed_boost = False
         self.boost_timer = 0
         self.boost_time = 5000  # Default boost time of 5 seconds
+
+        # Tin จำนวนชีวิตเริ่มต้น
+        self.lives = 3
+        # Tin กำหนดสถานะว่ายังมีชีวิต
+        self.alive = True
 
     def get_keys(self):
         self.vel = vec(0, 0)
@@ -91,6 +96,23 @@ class Player(pg.sprite.Sprite):
 
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
+
+    # Tin
+    def take_damage(self):
+        """ลดจำนวนชีวิตลงเมื่อโดนศัตรูหรืออุปสรรค"""
+        self.lives -= 1
+        if self.lives <= 0:
+            self.lives = 0
+            self.alive = False  # ตัวละครตาย
+            self.game.player_died()  # เรียกฟังก์ชันในเกมเมื่อผู้เล่นตาย
+
+    # Tin
+    def respawn(self, x, y):
+        """เกิดใหม่ที่ตำแหน่งเริ่มต้น"""
+        self.alive = True
+        self.pos = vec(x, y) * TILESIZE
+        self.rect.topleft = self.pos
+        self.vel = vec(0, 0)
 
 # Tle
 class Wall(pg.sprite.Sprite):

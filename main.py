@@ -32,6 +32,11 @@ class Game:
         # ตัวแปรคะแนน
         self.score = 0
 
+        # ตัวแปรสำหรับจัดการผลกระทบของผลไม้พิเศษ
+        self.ghost_speed_effect_active = False
+        self.ghost_speed_effect_timer = 0
+        self.ghost_original_speed = {}
+
         self.load_data()
 
     # Tle
@@ -132,9 +137,15 @@ class Game:
 
     # Tle and Iya
     def update(self):   # method อัพเดทตำแหน่งของสไปร์ท
+        # ตรวจสอบว่าเอฟเฟกต์ของผลไม้พิเศษหมดเวลาแล้วหรือยัง
+        if self.ghost_speed_effect_active:
+            current_time = pg.time.get_ticks()
+            if current_time - self.ghost_speed_effect_timer > self.ghost_speed_effect_duration:
+                self.reset_ghost_speed()  # รีเซ็ตความเร็วของผีเมื่อหมดเวลา
+
         self.all_sprites.update()
         self.camera.update(self.player)
-        self.ghosts.update()  # อัปเดตตำแหน่งของผี
+        self.ghosts.update()    # อัปเดตตำแหน่งของผี
 
         # Iya ตรวจจับการชนระหว่างผู้เล่นและผลไม้
         hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
@@ -143,9 +154,8 @@ class Game:
 
             # ใน update function ของ Game class
             if isinstance(hit, SpecialFruit):
-
                 # ใช้เอฟเฟกต์ผลไม้พิเศษกับผู้เล่น
-                hit.apply_effect(self.player)
+                hit.apply_effect(self)
                 print(f"Special effect activated: {hit.effect_type}")
 
                 # สร้างผลไม้พิเศษใหม่
@@ -240,10 +250,36 @@ class Game:
             ghost.rect.topleft = ghost.pos  # อัปเดตตำแหน่ง sprite
 
     def modify_ghost_speed(self, multiplier):
-        """ปรับความเร็วของผีทั้งหมด"""
         for ghost in self.ghosts:
-            ghost.speed *= multiplier  # ปรับความเร็วตาม multiplier
-            ghost.speed = max(50, min(300, ghost.speed))  # จำกัดความเร็วให้อยู่ในช่วงที่เหมาะสม
+            ghost.speed *= multiplier
+            ghost.speed = max(30, min(100, ghost.speed))  # จำกัดความเร็วให้อยู่ระหว่าง 30 ถึง 100
+
+    def apply_ghost_speed_effect(self, multiplier, duration):
+        """เริ่มต้นผลกระทบเพิ่ม/ลดความเร็วของผี"""
+        if not self.ghost_speed_effect_active:
+            # เก็บความเร็วเริ่มต้นของผีทุกตัว
+            for ghost in self.ghosts:
+                self.ghost_original_speed[ghost] = ghost.speed
+
+            # ปรับความเร็วของผีทั้งหมด
+            self.modify_ghost_speed(multiplier)
+
+            # ตั้งค่าตัวจับเวลา
+            self.ghost_speed_effect_active = True
+            self.ghost_speed_effect_timer = pg.time.get_ticks()  # เวลาเริ่มต้นในมิลลิวินาที
+
+        # ระยะเวลาของเอฟเฟกต์
+        self.ghost_speed_effect_duration = duration
+
+    def reset_ghost_speed(self):
+        """รีเซ็ตความเร็วของผีทั้งหมดกลับไปเป็นค่าปกติ"""
+        for ghost in self.ghosts:
+            if ghost in self.ghost_original_speed:
+                ghost.speed = self.ghost_original_speed[ghost]  # คืนค่าความเร็วเดิม
+
+        # ล้างสถานะเอฟเฟกต์
+        self.ghost_speed_effect_active = False
+        self.ghost_original_speed.clear()
 
 # Tin
 def start_game():

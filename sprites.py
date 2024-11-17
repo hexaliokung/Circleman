@@ -198,27 +198,29 @@ class Fruit(pg.sprite.Sprite):
 # Iya class SpecialFruit เป็นคลาสลูกของ class Fruit
 class SpecialFruit(Fruit):
     def __init__(self, game, x, y):
-        # เรียกใช้ constructor ของ Class Fruit
         super().__init__(game, x, y)
 
         self.image.fill((0, 0, 0, 0))  # ล้างพื้นหลังให้โปร่งใส
-
-        # เปลี่ยนสีของวงกลมเป็นสีแดง และมีขนาด ใหญ่ขึ้นเล็กน้อย
         pg.draw.circle(self.image, RED, (TILESIZE // 2, TILESIZE // 2), TILESIZE // 3)
 
-        # สุ่มเอฟเฟกต์เป็นเพิ่มหรือลดความเร็ว
-        self.effect_type = random.choice(["speed_up", "speed_down"])
+        # เพิ่มความสามารถแบบสุ่ม
+        self.effect_type = random.choice(["speed_up", "speed_down", "ghost_speed_up", "ghost_speed_down"])
         self.boost_time = 5000  # ระยะเวลาผลของเอฟเฟกต์ 5 วินาที
 
-    def apply_effect(self, player):
+    def apply_effect(self, game):
         if self.effect_type == "speed_up":
-            player.speed_boost = True
-            player.boost_timer = 0
-            player.speed_multiplier = 1.5  # เพิ่มความเร็ว
+            game.player.speed_boost = True
+            game.player.boost_timer = 0
+            game.player.speed_multiplier = 1.2  # เพิ่มความเร็วผู้เล่น
         elif self.effect_type == "speed_down":
-            player.speed_boost = True
-            player.boost_timer = 0
-            player.speed_multiplier = 0.5  # ลดความเร็ว
+            game.player.speed_boost = True
+            game.player.boost_timer = 0
+            game.player.speed_multiplier = 0.3  # ลดความเร็วผู้เล่น
+        elif self.effect_type == "ghost_speed_up":
+            game.apply_ghost_speed_effect(multiplier=1.5, duration=5000)  # เพิ่มความเร็วผี 5 วินาที
+        elif self.effect_type == "ghost_speed_down":
+            game.apply_ghost_speed_effect(multiplier=0.5, duration=5000)  # ลดความเร็วผี 5 วินาที
+
 
 # Pao
 class Ghost(pg.sprite.Sprite):
@@ -234,13 +236,14 @@ class Ghost(pg.sprite.Sprite):
 
     def update(self):
         """อัปเดตตำแหน่งของผี"""
-        # ตรวจสอบว่าผีอยู่ใกล้เป้าหมายหรือไม่
-        if self.pos.distance_to(self.target) < 1:  # ถ้าถึงเป้าหมาย
-            self.target = self.get_next_target()  # กำหนดเป้าหมายใหม่
-
-        # คำนวณเวกเตอร์ทิศทางและความเร็ว
-        direction = (self.target - self.pos).normalize()  # หาทิศทางเป็นเวกเตอร์หน่วย
-        self.pos += direction * self.speed * self.game.dt  # เคลื่อนที่ตามความเร็ว
+        if self.pos.distance_to(self.target) < self.speed * self.game.dt:
+            # ตั้งค่าตำแหน่งเป็นเป้าหมายทันที
+            self.pos = self.target
+            self.target = self.get_next_target()  # อัปเดตเป้าหมายใหม่
+        else:
+            direction = (self.target - self.pos).normalize()
+            if direction.length() > 0:  # ตรวจสอบว่าทิศทางมีค่ามากกว่า 0
+                self.pos += direction * self.speed * self.game.dt
 
         # อัปเดตตำแหน่งของสี่เหลี่ยม
         self.rect.center = self.pos
@@ -334,11 +337,10 @@ class Ghost(pg.sprite.Sprite):
         start = (int(self.pos.x // TILESIZE), int(self.pos.y // TILESIZE))
         goal = (int(self.game.player.pos.x // TILESIZE), int(self.game.player.pos.y // TILESIZE))
         path = self.astar_pathfinding(start, goal)
-
-        if path:
-            next_tile = path[0]  # ตำแหน่งถัดไปในเส้นทาง
+        if path:  # มีเส้นทาง
+            next_tile = path[0]
             return vec(next_tile[0] * TILESIZE + TILESIZE // 2, next_tile[1] * TILESIZE + TILESIZE // 2)
-        return self.pos  # ถ้าไม่มีเส้นทางให้หยุดที่ตำแหน่งเดิม
+        return self.pos  # ถ้าไม่มีเส้นทาง ให้ใช้ตำแหน่งปัจจุบัน
 
     def draw_health_bar(self):#แสดงแถบพลังชีวิตของผี
         bar_width = 50

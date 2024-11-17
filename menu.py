@@ -35,9 +35,72 @@ def play():
 
         pygame.display.update()
 
-# ฟังก์ชันสำหรับหน้าจอเมนูหลัก
+def difficulty_menu():
+    """เมนูเลือกระดับความยาก"""
+    while True:
+        # แสดงพื้นหลังและตำแหน่งเมาส์
+        SCREEN.blit(BG, (0, 0))
+        DIFFICULTY_MOUSE_POS = pygame.mouse.get_pos()
+
+        # แสดงข้อความหัวข้อ "Select Difficulty"
+        DIFFICULTY_TEXT = get_font(80).render("SELECT DIFFICULTY", True, "#FF9966")
+        DIFFICULTY_RECT = DIFFICULTY_TEXT.get_rect(center=(820, 200))
+        SCREEN.blit(DIFFICULTY_TEXT, DIFFICULTY_RECT)
+
+        # สร้างปุ่มสำหรับระดับความยากแบบโปร่งแสง (ไม่มีพื้นหลัง)
+        EASY_BUTTON = Button(
+            pos=(820, 400),
+            text_input="EASY",
+            font=get_font(50),
+            base_color="#FF9966",
+            hovering_color="White"
+        )
+        MEDIUM_BUTTON = Button(
+            pos=(820, 500),
+            text_input="MEDIUM",
+            font=get_font(50),
+            base_color="#FF9966",
+            hovering_color="White"
+        )
+        HARD_BUTTON = Button(
+            pos=(820, 600),
+            text_input="HARD",
+            font=get_font(50),
+            base_color="#FF9966",
+            hovering_color="White"
+        )
+        BACK_BUTTON = Button(
+            pos=(820, 700),
+            text_input="BACK",
+            font=get_font(50),
+            base_color="#FF9966",
+            hovering_color="White"
+        )
+
+        # อัปเดตปุ่มและตรวจสอบสถานะเมาส์
+        for button in [EASY_BUTTON, MEDIUM_BUTTON, HARD_BUTTON, BACK_BUTTON]:
+            button.changeColor(DIFFICULTY_MOUSE_POS)
+            button.update(SCREEN)
+
+        # จัดการเหตุการณ์ในหน้าจอเมนูเลือกระดับความยาก
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if EASY_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  # คลิกปุ่ม EASY
+                    start_game("map1.txt")
+                if MEDIUM_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  # คลิกปุ่ม MEDIUM
+                    start_game("map2.txt")
+                if HARD_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  # คลิกปุ่ม HARD
+                    start_game("map3.txt")
+                if BACK_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  # คลิกปุ่ม BACK
+                    main_menu()
+
+        pygame.display.update()
+
 def main_menu():
-    """สร้างหน้าจอเมนูหลัก พร้อมปุ่ม Play และ Quit"""
+    """เมนูหลักที่มีปุ่ม Start และ Exit"""
     while True:
         # แสดงพื้นหลังและตำแหน่งเมาส์
         SCREEN.blit(BG, (0, 0))
@@ -48,38 +111,36 @@ def main_menu():
         MENU_RECT = MENU_TEXT.get_rect(center=(820, 300))
         SCREEN.blit(MENU_TEXT, MENU_RECT)
 
-        # สร้างปุ่ม Play และ Quit
-        PLAY_BUTTON = Button(
-            image=pygame.image.load("img/menu_inv_button.png"), 
-            pos=(820, 500), 
-            text_input="PLAY", 
-            font=get_font(50), 
-            base_color="#FF9966", 
+        # สร้างปุ่ม Start และ Exit
+        START_BUTTON = Button(
+            pos=(820, 500),
+            text_input="START",
+            font=get_font(50),
+            base_color="#FF9966",
             hovering_color="White"
         )
-        QUIT_BUTTON = Button(
-            image=pygame.image.load("img/menu_inv_button.png"), 
-            pos=(820, 650), 
-            text_input="QUIT", 
-            font=get_font(50), 
-            base_color="#FF9966", 
+        EXIT_BUTTON = Button(
+            pos=(820, 650),
+            text_input="EXIT",
+            font=get_font(50),
+            base_color="#FF9966",
             hovering_color="White"
-        )
+)
 
         # อัปเดตปุ่มและตรวจสอบสถานะเมาส์
-        for button in [PLAY_BUTTON, QUIT_BUTTON]:
+        for button in [START_BUTTON, EXIT_BUTTON]:
             button.changeColor(MENU_MOUSE_POS)
             button.update(SCREEN)
 
-        # จัดการเหตุการณ์ในหน้าจอเมนู
+        # จัดการเหตุการณ์ในหน้าจอเมนูหลัก
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if PLAY_BUTTON.checkForInput(MENU_MOUSE_POS):  # คลิกปุ่ม Play
-                    start_game()
-                if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS):  # คลิกปุ่ม Quit
+                if START_BUTTON.checkForInput(MENU_MOUSE_POS):  # คลิกปุ่ม Start
+                    difficulty_menu()  # เปลี่ยนไปที่เมนูเลือกระดับความยาก
+                if EXIT_BUTTON.checkForInput(MENU_MOUSE_POS):  # คลิกปุ่ม Exit
                     pygame.quit()
                     sys.exit()
 

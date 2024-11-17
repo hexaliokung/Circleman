@@ -11,7 +11,7 @@ class Player(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self, game.all_sprites)  # เรียกใช้ constructor ของ Sprite โดยตรง
         self.game = game
         self.image = pg.Surface(((TILESIZE // 4) * 3, (TILESIZE // 4) * 3))
-        self.image.fill(YELLOW)
+        self.image = pg.image.load("img/player.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.vel = vec(0, 0)
         self.pos = vec(x, y) * TILESIZE
@@ -176,7 +176,7 @@ class TimedObstacle(pg.sprite.Sprite):
 # Tle
 # คลาสสำหรับกับดักที่เปิด-ปิดได้ตามเวลา
 class TimedTrap(pg.sprite.Sprite):
-    def __init__(self, game, x, y, appear_time=2000, disappear_time=2000):
+    def __init__(self, game, x, y, appear_time=5000, disappear_time=3500):
         self.groups = game.all_sprites, game.traps  # เพิ่มไปยังกลุ่ม traps
         pg.sprite.Sprite.__init__(self, self.groups)
 
@@ -434,12 +434,12 @@ class Blinky(Ghost):
 
 class Pinky(Ghost):
     def __init__(self, game, x, y):
-        super().__init__(game, x, y, pinky_img, "pink", speed=70)
+        super().__init__(game, x, y, pinky_img, "pink", speed=75)
 
 class Inky(Ghost):
     def __init__(self, game, x, y):
-        super().__init__(game, x, y, inky_img, "blue", speed=60)
+        super().__init__(game, x, y, inky_img, "blue", speed=70)
 
 class Clyde(Ghost):
     def __init__(self, game, x, y):
-        super().__init__(game, x, y, clyde_img, "orange", speed=50)
+        super().__init__(game, x, y, clyde_img, "orange", speed=65)

@@ -7,11 +7,12 @@ from sprites import *
 from settings import *
 from tilemap import *
 
+
 # Tle
 class Game:
 
     # Tle
-    def __init__(self):
+    def __init__(self, map_file):
 
         # เริ่มต้น pygame
         pg.init()
@@ -37,13 +38,15 @@ class Game:
         self.ghost_speed_effect_timer = 0
         self.ghost_original_speed = {}
 
+        self.map_file = map_file  # บันทึกชื่อไฟล์แผนที่
         self.load_data()
 
     # Tle
     def load_data(self):
+        """โหลดข้อมูลเกม"""
         game_folder = path.dirname(__file__)
         img_folder = path.join(game_folder, "img")
-        self.map = Map(path.join(game_folder, "map1.txt"))
+        self.map = Map(path.join(game_folder, self.map_file))  # โหลดแผนที่ตามไฟล์ที่เลือก
         self.player_img = pg.image.load(path.join(img_folder, PLAYER_IMG)).convert_alpha()
 
     # Tle
@@ -98,41 +101,42 @@ class Game:
         self.fruits = pg.sprite.Group()
         self.traps = pg.sprite.Group()
 
-        # สร้างภาพตามไฟล์
+        # เก็บตำแหน่งของเลข "2" สำหรับผลไม้ธรรมดา
+        self.fruit_positions = []
+
+        # สร้างวัตถุตามแผนที่
         for row, tiles in enumerate(self.map.data):
             for col, tile in enumerate(tiles):
                 if tile == "1":  # กำแพง
                     Wall(self, col, row)
                 elif tile == "P":  # ผู้เล่น
                     self.player = Player(self, col, row)
-                elif tile == "2":  # ผลไม้ปกติ
-                    Fruit(self, col, row)
-
+                elif tile == "2":  # เก็บตำแหน่งเลข "2" สำหรับสุ่มเกิดผลไม้
+                    self.fruit_positions.append((col, row))
                 elif tile == "3":  # Obstacle แบบ Timed
-                    random_start_time = random.randint(0, 5000)  # สุ่มเวลาเริ่มต้นระหว่าง 0 ถึง 5 วินาที
-                    TimedObstacle(self, col, row, appear_time=3000, disappear_time=2000, start_time=random_start_time)
+                    random_start_time = random.randint(0, 5000)
+                    TimedObstacle(self, col, row, appear_time=3000, disappear_time=3500, start_time=random_start_time)
                 elif tile == "4":  # กับดักที่เปิด-ปิดได้
-                    TimedTrap(self, col, row, appear_time=3000, disappear_time=2000)
-
-                elif tile == "B":  # ผีแดง (Blinky)
+                    TimedTrap(self, col, row, appear_time=5000, disappear_time=3500)
+                elif tile == "B":  # ผีแดง
                     ghost = Blinky(self, col, row)
-                    self.ghosts.add(ghost)  # เพิ่ม Blinky ในกลุ่มผี
-                    self.all_sprites.add(ghost)  # เพิ่ม Blinky ในกลุ่มสไปร์ททั้งหมด
-
-                elif tile == "W":  # ผีชมพู (Pinky)
+                    self.ghosts.add(ghost)
+                    self.all_sprites.add(ghost)
+                elif tile == "W":  # ผีชมพู
                     ghost = Pinky(self, col, row)
                     self.ghosts.add(ghost)
                     self.all_sprites.add(ghost)
-
-                elif tile == "I":  # ผีฟ้า (Inky)
+                elif tile == "I":  # ผีฟ้า
                     ghost = Inky(self, col, row)
-                    self.ghosts.add(ghost)  # เพิ่ม Inky ในกลุ่มผี
-                    self.all_sprites.add(ghost)  # เพิ่ม Inky ในกลุ่มสไปร์ททั้งหมด
-
-                elif tile == "C":  # ผีส้ม (Clyde)
+                    self.ghosts.add(ghost)
+                    self.all_sprites.add(ghost)
+                elif tile == "C":  # ผีส้ม
                     ghost = Clyde(self, col, row)
-                    self.ghosts.add(ghost)  # เพิ่ม Clyde ในกลุ่มผี
-                    self.all_sprites.add(ghost)  # เพิ่ม Clyde ในกลุ่มสไปร์ททั้งหมด
+                    self.ghosts.add(ghost)
+                    self.all_sprites.add(ghost)
+
+        # สุ่มสร้างผลไม้ธรรมดาจากตำแหน่งที่เก็บไว้
+        self.spawn_fruits()
 
         # เริ่มต้นด้วยผลไม้พิเศษเพียงลูกเดียว
         self.respawn_special_fruit()
@@ -228,10 +232,17 @@ class Game:
         """จัดการเมื่อผู้เล่นตาย"""
         if self.player.lives > 0:
             # ถ้ายังมีชีวิตเหลือ ให้เกิดใหม่ที่ตำแหน่งเริ่มต้น
-            self.player.respawn(5, 5)  # ตำแหน่งเริ่มต้น
+            self.player.respawn(15, 26)  # ตำแหน่งเริ่มต้น
         else:
             print("Game Over")  # แสดงข้อความเมื่อเกมจบ
             self.playing = False  # จบเกม
+
+    # Iya
+    def spawn_fruits(self):
+        """สุ่มตำแหน่งผลไม้ธรรมดาจากตำแหน่งที่เก็บไว้"""
+        for position in self.fruit_positions:
+            if random.random() < 0.6:  # โอกาส 70% ที่จะเกิดผลไม้ในตำแหน่งนั้น
+                Fruit(self, position[0], position[1])
 
     # Iya
     def respawn_special_fruit(self):
@@ -263,18 +274,18 @@ class Game:
 
     def reset_positions(self):  # reset ตำแหน่งผู้เล่นและผีเริ่มต้น
         # รีเซ็ตตำแหน่งผู้เล่น
-        self.player.respawn(32, 20)  # กำหนดตำแหน่งเริ่มต้นของผู้เล่น (เปลี่ยนได้ตามแผนที่)
+        self.player.respawn(26, 15)  # กำหนดตำแหน่งเริ่มต้นของผู้เล่น (เปลี่ยนได้ตามแผนที่)
 
         # รีเซ็ตตำแหน่งของผี
         for ghost in self.ghosts:
             if isinstance(ghost, Blinky):  # สำหรับผีแต่ละชนิด
-                ghost.pos = vec(7, 7) * TILESIZE  # กำหนดตำแหน่งเริ่มต้นของ Blinky
+                ghost.pos = vec(1, 1) * TILESIZE  # กำหนดตำแหน่งเริ่มต้นของ Blinky
             elif isinstance(ghost, Pinky):
-                ghost.pos = vec(10, 10) * TILESIZE  # ตำแหน่งเริ่มต้นของ Pinky
+                ghost.pos = vec(51, 1) * TILESIZE  # ตำแหน่งเริ่มต้นของ Pinky
             elif isinstance(ghost, Inky):
-                ghost.pos = vec(12, 7) * TILESIZE  # ตำแหน่งเริ่มต้นของ Inky
+                ghost.pos = vec(1, 31) * TILESIZE  # ตำแหน่งเริ่มต้นของ Inky
             elif isinstance(ghost, Clyde):
-                ghost.pos = vec(7, 12) * TILESIZE  # ตำแหน่งเริ่มต้นของ Clyde
+                ghost.pos = vec(51, 31) * TILESIZE  # ตำแหน่งเริ่มต้นของ Clyde
 
             ghost.target = ghost.pos  # ตั้งเป้าหมายเป็นตำแหน่งเริ่มต้น
             ghost.rect.topleft = ghost.pos  # อัปเดตตำแหน่ง sprite
@@ -336,12 +347,13 @@ class Game:
                         self.quit()
 
 # Tin
-def start_game():
+def start_game(map_file):
+    """เริ่มเกมด้วยแผนที่ที่เลือก"""
     # ตั้งค่าเพลงใหม่ในเกม (เฉพาะเมื่อเปลี่ยนเพลง)
-    if not pg.mixer.music.get_busy():  # ตรวจสอบว่าเพลงกำลังเล่นอยู่หรือไม่
+    if not pg.mixer.music.get_busy():
         pg.mixer.music.load("img/game_music.ogg")  # เปลี่ยนเพลงสำหรับเกม
         pg.mixer.music.play(-1)  # เล่นเพลงแบบวนลูป
 
-    game = Game()
+    game = Game(map_file)  # ส่งชื่อแผนที่ให้กับคลาสเกม
     game.new()
     game.run()

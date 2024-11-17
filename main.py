@@ -167,6 +167,19 @@ class Game:
                 # สร้างผลไม้พิเศษใหม่
                 self.respawn_special_fruit()
 
+        # ตรวจสอบว่าเก็บผลไม้ครบหรือยัง
+        if not self.fruits:  # ถ้าเก็บครบแล้ว
+            self.game_over("YOU WIN!")  # แสดงข้อความชนะ
+
+        # ตรวจสอบว่าแพ้หรือไม่
+        if not self.player.alive:  # ถ้าผู้เล่นเสียชีวิต
+            self.game_over("GAME OVER")  # แสดงข้อความแพ้
+
+        # ตรวจสอบว่าเก็บผลไม้ครบหรือยัง
+        if not self.fruits:  # ถ้าไม่มีผลไม้เหลือในกลุ่ม
+            print("You Win!")  # แสดงข้อความชนะ (หรือเพิ่มการแสดงผลบนหน้าจอ)
+            self.playing = False  # จบเกม
+
         # Tin ตรวจจับการชนระหว่างผู้เล่นและผี
         ghost_hits = pg.sprite.spritecollide(self.player, self.ghosts, False)  # False ไม่ลบผี
         if ghost_hits and self.player.alive:
@@ -183,7 +196,6 @@ class Game:
             trap.on_player_collide(self.player)
             print("Player hit a trap! Lives remaining:", self.player.lives)
 
-
     # Tle and Iya and Tin
     def draw(self):
         self.scr_display.fill("DARKGREY")
@@ -195,6 +207,11 @@ class Game:
 
         # Tin วาดหัวใจ
         self.draw_hearts()
+
+        # ตรวจสอบสถานะเกม ถ้าชนะ แสดงข้อความ
+        if not self.fruits:
+            self.draw_text("YOU WIN!", 60, GREEN, WIDTH // 2 - 100, HEIGHT // 2)
+
         pg.display.flip()
 
     # Tin
@@ -293,6 +310,30 @@ class Game:
         # ล้างสถานะเอฟเฟกต์
         self.ghost_speed_effect_active = False
         self.ghost_original_speed.clear()
+
+    def game_over(self, message):
+        """จัดการเมื่อเกมจบ"""
+        # แสดงข้อความจบเกม
+        self.scr_display.fill("BLACK")  # เติมสีพื้นหลัง
+        self.draw_text(message, 60, WHITE, WIDTH // 2 - 150, HEIGHT // 2 - 30)  # แสดงข้อความ
+
+        # แสดงปุ่ม "Restart" หรือ "Quit" (ตัวอย่าง)
+        self.draw_text("Press R to Restart or Q to Quit", 30, WHITE, WIDTH // 2 - 180, HEIGHT // 2 + 50)
+        pg.display.flip()
+
+        # รอการตอบสนองของผู้เล่น
+        waiting = True
+        while waiting:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    self.quit()
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_r:  # Restart เกมใหม่
+                        waiting = False
+                        self.new()
+                        self.run()
+                    elif event.key == pg.K_q:  # ออกจากเกม
+                        self.quit()
 
 # Tin
 def start_game():

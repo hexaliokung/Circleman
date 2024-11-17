@@ -260,12 +260,11 @@ class SpecialFruit(Fruit):
         elif self.effect_type == "speed_down":
             game.player.speed_boost = True
             game.player.boost_timer = 0
-            game.player.speed_multiplier = 0.3  # ลดความเร็วผู้เล่น
+            game.player.speed_multiplier = 0.9  # ลดความเร็วผู้เล่น
         elif self.effect_type == "ghost_speed_up":
             game.apply_ghost_speed_effect(multiplier=1.5, duration=5000)  # เพิ่มความเร็วผี 5 วินาที
         elif self.effect_type == "ghost_speed_down":
             game.apply_ghost_speed_effect(multiplier=0.5, duration=5000)  # ลดความเร็วผี 5 วินาที
-
 
 # Pao
 class Ghost(pg.sprite.Sprite):

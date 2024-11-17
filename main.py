@@ -87,10 +87,10 @@ class Game:
     def new(self):
         # สร้างกลุ่มของสไปร์ททั้งหมด
         self.all_sprites = pg.sprite.Group()
+        self.ghosts = pg.sprite.Group()
         self.walls = pg.sprite.Group()
         self.obstacles = pg.sprite.Group()
         self.fruits = pg.sprite.Group()
-        self.ghosts = pg.sprite.Group()  # กลุ่มผี
 
         # สร้างภาพตามไฟล์
         for row, tiles in enumerate(self.map.data):
@@ -101,20 +101,24 @@ class Game:
                     self.player = Player(self, col, row)
                 elif tile == "2":  # ผลไม้ปกติ
                     Fruit(self, col, row)
+
                 elif tile == "B":  # ผีแดง (Blinky)
-                    ghost = Blinky(self, col * TILESIZE, row * TILESIZE)
+                    ghost = Blinky(self, col, row)
                     self.ghosts.add(ghost)  # เพิ่ม Blinky ในกลุ่มผี
                     self.all_sprites.add(ghost)  # เพิ่ม Blinky ในกลุ่มสไปร์ททั้งหมด
+
                 elif tile == "W":  # ผีชมพู (Pinky)
-                    ghost = Pinky(self, col * TILESIZE, row * TILESIZE)
-                    self.ghosts.add(ghost)  # เพิ่ม Pinky ในกลุ่มผี
-                    self.all_sprites.add(ghost)  # เพิ่ม Pinky ในกลุ่มสไปร์ททั้งหมด
+                    ghost = Pinky(self, col, row)
+                    self.ghosts.add(ghost)
+                    self.all_sprites.add(ghost)
+
                 elif tile == "I":  # ผีฟ้า (Inky)
-                    ghost = Inky(self, col * TILESIZE, row * TILESIZE)
+                    ghost = Inky(self, col, row)
                     self.ghosts.add(ghost)  # เพิ่ม Inky ในกลุ่มผี
                     self.all_sprites.add(ghost)  # เพิ่ม Inky ในกลุ่มสไปร์ททั้งหมด
+
                 elif tile == "C":  # ผีส้ม (Clyde)
-                    ghost = Clyde(self, col * TILESIZE, row * TILESIZE)
+                    ghost = Clyde(self, col, row)
                     self.ghosts.add(ghost)  # เพิ่ม Clyde ในกลุ่มผี
                     self.all_sprites.add(ghost)  # เพิ่ม Clyde ในกลุ่มสไปร์ททั้งหมด
 
@@ -130,7 +134,7 @@ class Game:
     def update(self):   # method อัพเดทตำแหน่งของสไปร์ท
         self.all_sprites.update()
         self.camera.update(self.player)
-        self.ghosts.update()  # อัปเดตผี
+        self.ghosts.update()  # อัปเดตตำแหน่งของผี
 
         # Iya ตรวจจับการชนระหว่างผู้เล่นและผลไม้
         hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
@@ -152,6 +156,10 @@ class Game:
         if ghost_hits and self.player.alive:
             self.player.take_damage()  # ลดจำนวนชีวิตของผู้เล่น
             print(f"Player hit by ghost! Lives remaining: {self.player.lives}")
+
+            # ถ้าผู้เล่นยังมีชีวิตเหลือ รีเซ็ตตำแหน่ง
+            if self.player.lives > 0:
+                self.reset_positions()
 
     # Tle and Iya and Tin
     def draw(self):
@@ -204,8 +212,46 @@ class Game:
     def update_score(self, points):
         self.score += points
 
+    # Pao
+    def is_wall(self, x, y):
+        """ตรวจสอบว่าตำแหน่ง (x, y) เป็นกำแพงหรือไม่"""
+        # ตรวจสอบว่าในตำแหน่ง (x, y) มีวัตถุ Wall หรือไม่
+        for wall in self.walls:
+            if wall.x == x and wall.y == y:
+                return True
+        return False
+
+    def reset_positions(self):  # reset ตำแหน่งผู้เล่นและผีเริ่มต้น
+        # รีเซ็ตตำแหน่งผู้เล่น
+        self.player.respawn(32, 20)  # กำหนดตำแหน่งเริ่มต้นของผู้เล่น (เปลี่ยนได้ตามแผนที่)
+
+        # รีเซ็ตตำแหน่งของผี
+        for ghost in self.ghosts:
+            if isinstance(ghost, Blinky):  # สำหรับผีแต่ละชนิด
+                ghost.pos = vec(7, 7) * TILESIZE  # กำหนดตำแหน่งเริ่มต้นของ Blinky
+            elif isinstance(ghost, Pinky):
+                ghost.pos = vec(10, 10) * TILESIZE  # ตำแหน่งเริ่มต้นของ Pinky
+            elif isinstance(ghost, Inky):
+                ghost.pos = vec(12, 7) * TILESIZE  # ตำแหน่งเริ่มต้นของ Inky
+            elif isinstance(ghost, Clyde):
+                ghost.pos = vec(7, 12) * TILESIZE  # ตำแหน่งเริ่มต้นของ Clyde
+
+            ghost.target = ghost.pos  # ตั้งเป้าหมายเป็นตำแหน่งเริ่มต้น
+            ghost.rect.topleft = ghost.pos  # อัปเดตตำแหน่ง sprite
+
+    def modify_ghost_speed(self, multiplier):
+        """ปรับความเร็วของผีทั้งหมด"""
+        for ghost in self.ghosts:
+            ghost.speed *= multiplier  # ปรับความเร็วตาม multiplier
+            ghost.speed = max(50, min(300, ghost.speed))  # จำกัดความเร็วให้อยู่ในช่วงที่เหมาะสม
+
 # Tin
-def start_game(): # ฟังก์ชั่นเริ่มเกมที่จะถูกเรียกใน menu.py
+def start_game():
+    # ตั้งค่าเพลงใหม่ในเกม (เฉพาะเมื่อเปลี่ยนเพลง)
+    if not pg.mixer.music.get_busy():  # ตรวจสอบว่าเพลงกำลังเล่นอยู่หรือไม่
+        pg.mixer.music.load("img/game_music.ogg")  # เปลี่ยนเพลงสำหรับเกม
+        pg.mixer.music.play(-1)  # เล่นเพลงแบบวนลูป
+
     game = Game()
     game.new()
     game.run()

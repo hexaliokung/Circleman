@@ -52,9 +52,9 @@ def main_menu(): # สร้างหน้าจอเมนู
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             if event.type == pygame.MOUSEBUTTONDOWN:   # ถ้าคลิกปุ่ม play จะหยุดเพลงพื้นหลังและจะเริ่มเกม
                 if PLAY_BUTTON.checkForInput(MENU_MOUSE_POS):
-                    pg.mixer.music.stop()
                     start_game()
                 if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS): # ถ้าคลิกปุ่ม quit จะปิดเกม
                     pygame.quit()

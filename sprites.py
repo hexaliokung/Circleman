@@ -1,7 +1,10 @@
 import pygame as pg
 import random
+import heapq
+
 from settings import *
 vec = pg.math.Vector2
+
 # Tle and Iya and Tin
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -108,11 +111,10 @@ class Player(pg.sprite.Sprite):
 
     # Tin
     def respawn(self, x, y):
-        """เกิดใหม่ที่ตำแหน่งเริ่มต้น"""
         self.alive = True
-        self.pos = vec(x, y) * TILESIZE
+        self.pos = vec(x, y) * TILESIZE  # ตำแหน่งเริ่มต้น
         self.rect.topleft = self.pos
-        self.vel = vec(0, 0)
+        self.vel = vec(0, 0)  # รีเซ็ตความเร็ว
 
 # Tle
 class Wall(pg.sprite.Sprite):
@@ -226,20 +228,28 @@ class Ghost(pg.sprite.Sprite):
         self.image = image
         self.color = color
         self.rect = self.image.get_rect()
-        self.pos = vec(x, y) * TILESIZE  # ใช้ vec สำหรับการคำนวณตำแหน่ง
-        self.speed = speed / 2  # ปรับความเร็วให้ช้าลง (อาจปรับค่าตามต้องการ)
-        self.health = 100
+        self.pos = vec(x, y) * TILESIZE  # ตำแหน่งปัจจุบันในรูปแบบ Vector2
+        self.target = self.pos  # ตำแหน่งเป้าหมายเริ่มต้น
+        self.speed = speed  # ความเร็วในการเคลื่อนที่ของผี
 
     def update(self):
-        self.draw_health_bar()
-        self.follow_player(self.game.player)
-        self.rect.topleft = self.pos  # อัปเดตตำแหน่งตาม `pos`
+        """อัปเดตตำแหน่งของผี"""
+        # ตรวจสอบว่าผีอยู่ใกล้เป้าหมายหรือไม่
+        if self.pos.distance_to(self.target) < 1:  # ถ้าถึงเป้าหมาย
+            self.target = self.get_next_target()  # กำหนดเป้าหมายใหม่
+
+        # คำนวณเวกเตอร์ทิศทางและความเร็ว
+        direction = (self.target - self.pos).normalize()  # หาทิศทางเป็นเวกเตอร์หน่วย
+        self.pos += direction * self.speed * self.game.dt  # เคลื่อนที่ตามความเร็ว
+
+        # อัปเดตตำแหน่งของสี่เหลี่ยม
+        self.rect.center = self.pos
     
     def follow_player(self, player):
-        """ทำให้ผีเคลื่อนที่ไปหาผู้เล่นและตรวจสอบการชนกำแพง"""
+        """ทำให้ผีเคลื่อนที่เข้าหาผู้เล่น"""
         direction = vec(0, 0)
-        
-        # คำนวณทิศทางที่ผีจะเคลื่อนไปหาผู้เล่น
+
+        # คำนวณทิศทางที่ผีควรเคลื่อนไป
         if self.pos.x < player.pos.x:
             direction.x = self.speed
         elif self.pos.x > player.pos.x:
@@ -249,6 +259,86 @@ class Ghost(pg.sprite.Sprite):
         elif self.pos.y > player.pos.y:
             direction.y = -self.speed
 
+        # อัปเดตตำแหน่งของผี
+        self.pos += direction * self.game.dt
+
+    def random_move(self):
+        """ทำให้ผีเคลื่อนไหวแบบสุ่ม"""
+        self.random_timer += self.game.dt  # เพิ่มเวลา
+
+        # เปลี่ยนทิศทางทุก 2 วินาที
+        if self.random_timer >= 2:
+            self.random_dir = random.choice([(1, 0), (-1, 0), (0, 1), (0, -1)])
+            self.random_timer = 0  # รีเซ็ตเวลา
+
+        # เคลื่อนที่ในทิศทางปัจจุบัน
+        direction = vec(self.random_dir[0], self.random_dir[1]) * self.speed
+        self.pos += direction * self.game.dt
+
+    def astar_pathfinding(self, start, goal):
+        """A* Pathfinding"""
+        # ใช้โครงสร้างข้อมูล priority queue
+        open_list = []
+        heapq.heappush(open_list, (0, start))
+        
+        came_from = {}
+        g_score = {start: 0}
+        f_score = {start: self.heuristic(start, goal)}
+
+        while open_list:
+            _, current = heapq.heappop(open_list)
+            
+            if current == goal:
+                # สร้างเส้นทางจาก start -> goal
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.reverse()
+                return path
+            
+            for neighbor in self.get_neighbors(current):
+                temp_g_score = g_score[current] + 1
+                if neighbor not in g_score or temp_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = temp_g_score
+                    f_score[neighbor] = temp_g_score + self.heuristic(neighbor, goal)
+                    if neighbor not in [i[1] for i in open_list]:
+                        heapq.heappush(open_list, (f_score[neighbor], neighbor))
+        return []
+
+    def heuristic(self, a, b):
+        """คำนวณระยะทาง Manhattan"""
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+    def get_neighbors(self, pos):
+        """ค้นหาตำแหน่งที่เพื่อนบ้านสามารถไปได้"""
+        neighbors = [
+            (pos[0] + 1, pos[1]),
+            (pos[0] - 1, pos[1]),
+            (pos[0], pos[1] + 1),
+            (pos[0], pos[1] - 1)
+        ]
+        # กรองเพื่อนบ้านที่ไม่ชนกำแพง
+        valid_neighbors = [n for n in neighbors if self.is_valid_position(n)]
+        return valid_neighbors
+
+    def is_valid_position(self, pos):
+        """ตรวจสอบว่าตำแหน่งสามารถเดินได้ (ไม่ชนกำแพง)"""
+        x, y = pos
+        return 0 <= x < self.game.map.tilewidth and 0 <= y < self.game.map.tileheight and not self.game.is_wall(x, y)
+
+    def get_next_target(self):
+        """กำหนดตำแหน่งเป้าหมายใหม่"""
+        # ใช้ A* Pathfinding หาเป้าหมายถัดไป
+        start = (int(self.pos.x // TILESIZE), int(self.pos.y // TILESIZE))
+        goal = (int(self.game.player.pos.x // TILESIZE), int(self.game.player.pos.y // TILESIZE))
+        path = self.astar_pathfinding(start, goal)
+
+        if path:
+            next_tile = path[0]  # ตำแหน่งถัดไปในเส้นทาง
+            return vec(next_tile[0] * TILESIZE + TILESIZE // 2, next_tile[1] * TILESIZE + TILESIZE // 2)
+        return self.pos  # ถ้าไม่มีเส้นทางให้หยุดที่ตำแหน่งเดิม
 
     def draw_health_bar(self):#แสดงแถบพลังชีวิตของผี
         bar_width = 50
@@ -261,8 +351,6 @@ class Ghost(pg.sprite.Sprite):
         pg.draw.rect(self.game.scr_display, (255, 0, 0), bar)  # ใช้ self.game.scr_display แทน self.game.screen
         pg.draw.rect(self.game.scr_display, (0, 255, 0), fill_rect)  # ใช้ self.game.scr_display แทน self.game.screen
 
-
-
     def take_damage(self, amount):
         """ลดพลังชีวิตของผี"""
         self.health -= amount
@@ -273,43 +361,25 @@ class Ghost(pg.sprite.Sprite):
         """ทำให้ผีตาย"""
         self.kill()
 
+    def reset(self, x, y):
+        """รีเซ็ตตำแหน่งของผี"""
+        self.pos = vec(x, y) * TILESIZE  # ตำแหน่งเริ่มต้น
+        self.rect.topleft = self.pos
+        self.target = self.pos  # เป้าหมายกลับไปที่จุดเริ่มต้น
+
 # Pao
 class Blinky(Ghost):
-    def __init__(self, game, x, y):  # ผีแดง
-        blinky_img = pg.transform.scale(pg.image.load('img/red.png'), (TILESIZE, TILESIZE))
-        super().__init__(game, x, y, blinky_img, "red", speed=2)
+    def __init__(self, game, x, y):
+        super().__init__(game, x, y, blinky_img, "red", speed=80)
 
-    def update(self):
-        self.follow_player(self.game.player)  # ทำให้ผีบลินกี้ตามผู้เล่น
-        super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
-
-# Pao
 class Pinky(Ghost):
-    def __init__(self, game, x, y):  # ผีชมพู
-        pinky_img = pg.transform.scale(pg.image.load('img/pink.png'), (TILESIZE, TILESIZE))
-        super().__init__(game, x, y, pinky_img, "pink", speed=2)
+    def __init__(self, game, x, y):
+        super().__init__(game, x, y, pinky_img, "pink", speed=70)
 
-    def update(self):
-        self.follow_player(self.game.player)  # ทำให้ผีพิงกี้ตามผู้เล่น
-        super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
-
-# Pao
 class Inky(Ghost):
-    def __init__(self, game, x, y): # ผีฟ้า
+    def __init__(self, game, x, y):
+        super().__init__(game, x, y, inky_img, "blue", speed=60)
 
-        inky_img = pg.transform.scale(pg.image.load('img/blue.png'), (TILESIZE, TILESIZE))
-        super().__init__(game, x, y, inky_img, "blue", speed=2)
-
-    def update(self):
-        self.follow_player(self.game.player)  # ทำให้ผีอินกี้ตามผู้เล่น
-        super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
-
-# Pao
 class Clyde(Ghost):
-    def __init__(self, game, x, y):  # ผีส้ม
-        clyde_img = pg.transform.scale(pg.image.load('img/orange.png'), (TILESIZE, TILESIZE))
-        super().__init__(game, x, y, clyde_img, "orange", speed=2)
-
-    def update(self):
-        self.follow_player(self.game.player)  # ทำให้ผีคลายด์ตามผู้เล่น
-        super().update()  # เรียกใช้การอัปเดตจากคลาสแม่ (ตรวจสอบแถบพลังชีวิต)
+    def __init__(self, game, x, y):
+        super().__init__(game, x, y, clyde_img, "orange", speed=50)

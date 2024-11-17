@@ -134,40 +134,85 @@ class Wall(pg.sprite.Sprite):
 
 # Tle
 class TimedObstacle(pg.sprite.Sprite):
-    def __init__(self, game, x, y, appear_time=2000, disappear_time=2000):
+    def __init__(self, game, x, y, appear_time=2000, disappear_time=2000, start_time=0):
+        # เพิ่มวัตถุอุปสรรคเข้าสู่กลุ่ม sprites และ obstacles
         self.groups = game.all_sprites, game.obstacles
         pg.sprite.Sprite.__init__(self, self.groups)
         
         self.game = game
         self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(BLACK)  # Initial color when visible
+        self.image.fill(BLACK)  # กำหนดสีพื้นหลังของ obstacle เป็นสีดำ
         self.rect = self.image.get_rect()
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
         
+        self.appear_time = appear_time  # ระยะเวลาที่ obstacle จะปรากฏ
+        self.disappear_time = disappear_time  # ระยะเวลาที่ obstacle จะหายไป
+        self.start_time = start_time  # เวลาที่ obstacle จะเริ่มทำงาน
+        self.timer = -self.start_time  # ตั้งค่าเริ่มต้น (ลบ start_time เพื่อรอให้ถึงเวลาเริ่ม)
+        self.visible = False  # กำหนดให้ obstacle เริ่มต้นด้วยสถานะไม่แสดงผล
+
+    def update(self):
+        # เพิ่มค่าของ timer โดยแปลง delta time เป็นหน่วยมิลลิวินาที
+        self.timer += self.game.dt * 1000  
+
+        # ตรวจสอบว่า timer ถึงเวลาที่ obstacle ควรเริ่มทำงานหรือยัง
+        if self.timer >= 0:  
+            # ตรวจสอบสถานะ visible และจัดการการปรากฏ/หายของ obstacle
+            if self.visible and self.timer >= self.appear_time:
+                self.visible = False  # ตั้งค่าให้ obstacle หายไป
+                self.image.set_alpha(0)  # ตั้งค่าความโปร่งใส (ทำให้มองไม่เห็น)
+                self.timer = 0
+                # ลบ obstacle ออกจากกลุ่ม obstacles เพื่อไม่ให้ชนกับผู้เล่น
+                self.game.obstacles.remove(self)
+            elif not self.visible and self.timer >= self.disappear_time:
+                self.visible = True  # ตั้งค่าให้ obstacle ปรากฏ
+                self.image.set_alpha(255)  # ตั้งค่าความโปร่งใส (ทำให้มองเห็นได้)
+                self.image.fill(BLACK)  # เติมสีดำให้ obstacle
+                self.timer = 0
+                # เพิ่ม obstacle กลับเข้าสู่กลุ่ม obstacles เพื่อชนกับผู้เล่น
+                self.game.obstacles.add(self)
+
+# Tle
+# คลาสสำหรับกับดักที่เปิด-ปิดได้ตามเวลา
+class TimedTrap(pg.sprite.Sprite):
+    def __init__(self, game, x, y, appear_time=2000, disappear_time=2000):
+        self.groups = game.all_sprites, game.traps  # เพิ่มไปยังกลุ่ม traps
+        pg.sprite.Sprite.__init__(self, self.groups)
+
+        self.game = game
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(RED)  # สีแดงแสดงถึงกับดัก
+        self.rect = self.image.get_rect()
+        self.rect.x = x * TILESIZE
+        self.rect.y = y * TILESIZE
+
         self.appear_time = appear_time
         self.disappear_time = disappear_time
         self.timer = 0
         self.visible = True
 
     def update(self):
-        # Update timer for visibility toggle
-        self.timer += self.game.dt * 1000  # Convert dt to milliseconds
+        # อัปเดตเวลาเปิด-ปิดของกับดัก
+        self.timer += self.game.dt * 1000  # คำนวณเวลาเป็นมิลลิวินาที
 
-        # Toggle visibility and adjust collision based on visibility
         if self.visible and self.timer >= self.appear_time:
             self.visible = False
-            self.image.set_alpha(0)  # Make it invisible (transparent)
+            self.image.set_alpha(0)  # ซ่อนกับดัก (โปร่งใส)
             self.timer = 0
-            # Remove from obstacles group so it no longer blocks the player
-            self.game.obstacles.remove(self)
         elif not self.visible and self.timer >= self.disappear_time:
             self.visible = True
-            self.image.set_alpha(255)  # Make it visible with BLACK color
-            self.image.fill(BLACK)     # Ensure it is black when visible
+            self.image.set_alpha(255)  # แสดงกับดัก
             self.timer = 0
-            # Add back to obstacles group so it blocks the player
-            self.game.obstacles.add(self)
+
+    def on_player_collide(self, player):
+        """ลดหัวใจของผู้เล่นลง 1 และรีเซ็ตตำแหน่งเมื่อชนกับดัก"""
+        if self.visible:  # ตรวจสอบว่ากับดักเปิดอยู่หรือไม่
+            player.take_damage()
+            if player.lives > 0:  # ถ้าผู้เล่นยังมีชีวิต รีเซ็ตตำแหน่ง
+                self.game.reset_positions()
+            else:  # ถ้าผู้เล่นไม่มีชีวิต เกมจะจบ
+                print("Game Over")
 
 # Iya
 class Fruit(pg.sprite.Sprite):
@@ -233,19 +278,24 @@ class Ghost(pg.sprite.Sprite):
         self.pos = vec(x, y) * TILESIZE  # ตำแหน่งปัจจุบันในรูปแบบ Vector2
         self.target = self.pos  # ตำแหน่งเป้าหมายเริ่มต้น
         self.speed = speed  # ความเร็วในการเคลื่อนที่ของผี
+        self.pathfinding_timer = 0  # ตัวจับเวลาเพื่อลดความถี่การเรียก A*
 
     def update(self):
         """อัปเดตตำแหน่งของผี"""
-        if self.pos.distance_to(self.target) < self.speed * self.game.dt:
-            # ตั้งค่าตำแหน่งเป็นเป้าหมายทันที
+        # ลดความถี่ในการอัปเดตเป้าหมาย
+        self.pathfinding_timer += self.game.dt * 1000
+        if self.pathfinding_timer > 500:  # อัปเดตเป้าหมายทุก 500 มิลลิวินาที
+            self.target = self.get_next_target()
+            self.pathfinding_timer = 0
+
+        # คำนวณการเคลื่อนที่
+        if self.pos.distance_to(self.target) <= self.speed * self.game.dt:
             self.pos = self.target
-            self.target = self.get_next_target()  # อัปเดตเป้าหมายใหม่
         else:
             direction = (self.target - self.pos).normalize()
-            if direction.length() > 0:  # ตรวจสอบว่าทิศทางมีค่ามากกว่า 0
+            if direction.length() > 0:
                 self.pos += direction * self.speed * self.game.dt
 
-        # อัปเดตตำแหน่งของสี่เหลี่ยม
         self.rect.center = self.pos
     
     def follow_player(self, player):
@@ -280,17 +330,15 @@ class Ghost(pg.sprite.Sprite):
 
     def astar_pathfinding(self, start, goal):
         """A* Pathfinding"""
-        # ใช้โครงสร้างข้อมูล priority queue
         open_list = []
         heapq.heappush(open_list, (0, start))
-        
         came_from = {}
         g_score = {start: 0}
         f_score = {start: self.heuristic(start, goal)}
 
         while open_list:
             _, current = heapq.heappop(open_list)
-            
+
             if current == goal:
                 # สร้างเส้นทางจาก start -> goal
                 path = []
@@ -299,7 +347,7 @@ class Ghost(pg.sprite.Sprite):
                     current = came_from[current]
                 path.reverse()
                 return path
-            
+
             for neighbor in self.get_neighbors(current):
                 temp_g_score = g_score[current] + 1
                 if neighbor not in g_score or temp_g_score < g_score[neighbor]:
@@ -308,7 +356,9 @@ class Ghost(pg.sprite.Sprite):
                     f_score[neighbor] = temp_g_score + self.heuristic(neighbor, goal)
                     if neighbor not in [i[1] for i in open_list]:
                         heapq.heappush(open_list, (f_score[neighbor], neighbor))
-        return []
+
+        # ถ้าไม่มีเส้นทาง
+        return None
 
     def heuristic(self, a, b):
         """คำนวณระยะทาง Manhattan"""
@@ -333,14 +383,23 @@ class Ghost(pg.sprite.Sprite):
 
     def get_next_target(self):
         """กำหนดตำแหน่งเป้าหมายใหม่"""
-        # ใช้ A* Pathfinding หาเป้าหมายถัดไป
         start = (int(self.pos.x // TILESIZE), int(self.pos.y // TILESIZE))
         goal = (int(self.game.player.pos.x // TILESIZE), int(self.game.player.pos.y // TILESIZE))
         path = self.astar_pathfinding(start, goal)
-        if path:  # มีเส้นทาง
+
+        if path:  # หากมีเส้นทาง
             next_tile = path[0]
             return vec(next_tile[0] * TILESIZE + TILESIZE // 2, next_tile[1] * TILESIZE + TILESIZE // 2)
-        return self.pos  # ถ้าไม่มีเส้นทาง ให้ใช้ตำแหน่งปัจจุบัน
+        
+        # กรณีไม่มีเส้นทาง ให้สุ่มตำแหน่งใหม่ในพื้นที่ใกล้เคียง
+        neighbors = self.get_neighbors(start)
+        if neighbors:
+            random_tile = random.choice(neighbors)
+            return vec(random_tile[0] * TILESIZE + TILESIZE // 2, random_tile[1] * TILESIZE + TILESIZE // 2)
+        
+        # ถ้าไม่มีทางเลือก ให้หยุดที่ตำแหน่งเดิม
+        return self.pos
+
 
     def draw_health_bar(self):#แสดงแถบพลังชีวิตของผี
         bar_width = 50

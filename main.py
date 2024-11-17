@@ -96,6 +96,7 @@ class Game:
         self.walls = pg.sprite.Group()
         self.obstacles = pg.sprite.Group()
         self.fruits = pg.sprite.Group()
+        self.traps = pg.sprite.Group()
 
         # สร้างภาพตามไฟล์
         for row, tiles in enumerate(self.map.data):
@@ -106,6 +107,12 @@ class Game:
                     self.player = Player(self, col, row)
                 elif tile == "2":  # ผลไม้ปกติ
                     Fruit(self, col, row)
+
+                elif tile == "3":  # Obstacle แบบ Timed
+                    random_start_time = random.randint(0, 5000)  # สุ่มเวลาเริ่มต้นระหว่าง 0 ถึง 5 วินาที
+                    TimedObstacle(self, col, row, appear_time=3000, disappear_time=2000, start_time=random_start_time)
+                elif tile == "4":  # กับดักที่เปิด-ปิดได้
+                    TimedTrap(self, col, row, appear_time=3000, disappear_time=2000)
 
                 elif tile == "B":  # ผีแดง (Blinky)
                     ghost = Blinky(self, col, row)
@@ -130,9 +137,6 @@ class Game:
         # เริ่มต้นด้วยผลไม้พิเศษเพียงลูกเดียว
         self.respawn_special_fruit()
 
-        # เรียกใช้ TimedObstacle
-        TimedObstacle(self, 5, 5, appear_time=3000, disappear_time=2000)
-
         self.camera = Camera(self.map.width, self.map.height)
 
     # Tle and Iya
@@ -146,6 +150,8 @@ class Game:
         self.all_sprites.update()
         self.camera.update(self.player)
         self.ghosts.update()    # อัปเดตตำแหน่งของผี
+        self.traps.update()  # อัปเดตสถานะของกับดัก
+
 
         # Iya ตรวจจับการชนระหว่างผู้เล่นและผลไม้
         hits = pg.sprite.spritecollide(self.player, self.fruits, True)  # True เพื่อลบผลไม้ที่ชนแล้ว
@@ -170,6 +176,13 @@ class Game:
             # ถ้าผู้เล่นยังมีชีวิตเหลือ รีเซ็ตตำแหน่ง
             if self.player.lives > 0:
                 self.reset_positions()
+        
+        # ตรวจจับการชนระหว่างผู้เล่นและกับดัก
+        trap_hits = pg.sprite.spritecollide(self.player, self.traps, False)  # False เพราะไม่ต้องการลบกับดัก
+        for trap in trap_hits:
+            trap.on_player_collide(self.player)
+            print("Player hit a trap! Lives remaining:", self.player.lives)
+
 
     # Tle and Iya and Tin
     def draw(self):

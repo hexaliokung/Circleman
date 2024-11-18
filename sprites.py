@@ -213,6 +213,9 @@ class TimedTrap(pg.sprite.Sprite):
                 self.game.reset_positions()
             else:  # ถ้าผู้เล่นไม่มีชีวิต เกมจะจบ
                 print("Game Over")
+            
+            # เล่นเสียงระเบิด
+            self.game.boom.play()
 
 # Iya
 class Fruit(pg.sprite.Sprite):

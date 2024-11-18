@@ -1,4 +1,4 @@
-import pygame as pg # pg ย่อมาจาก pygame
+import pygame as pg
 import sys
 from os import path
 
@@ -7,38 +7,21 @@ from sprites import *
 from settings import *
 from tilemap import *
 
-
 # Tle
 class Game:
-
-    # Tle
     def __init__(self, map_file):
-
-        # เริ่มต้น pygame
         pg.init()
 
-        # หน้าต่างแสดงผลให้มีขนาด = WIDTH, HEIGHT
         self.scr_display = pg.display.set_mode((WIDTH, HEIGHT))
-
-        # ตั้งค่าชื่อของหน้าต่างเกม ซึ่งจะแสดงที่แถบด้านบนของหน้าต่าง
         pg.display.set_caption("Circle man")
-
-        # ใช้สำหรับควบคุมความเร็วในการอัปเดตและการแสดงผลของเกม
         self.clock = pg.time.Clock()
+        pg.key.set_repeat(100, 100)
 
-        # ใช้สำหรับการตั้งค่าการทำซ้ำของการกดปุ่มคีย์บอร์ด เมื่อผู้ใช้กดปุ่มค้างไว้
-        # โปรแกรมจะรับรู้ว่าปุ่มถูกกดซ้ำตามช่วงเวลาที่กำหนด
-        pg.key.set_repeat(100, 100) # (เวลารอตรวจจับกดปุ่มซ้ำหลังจากกดปุ่มค้างไว้, ตรวจจับว่ากดซ้ำเรื่อยๆในอีก...ตราบใดที่ยังกด)
-
-        # ตัวแปรคะแนน
         self.score = 0
-
-        # ตัวแปรสำหรับจัดการผลกระทบของผลไม้พิเศษ
         self.ghost_speed_effect_active = False
         self.ghost_speed_effect_timer = 0
         self.ghost_original_speed = {}
-
-        self.map_file = map_file  # บันทึกชื่อไฟล์แผนที่
+        self.map_file = map_file
         self.load_data()
 
     # Tle
@@ -46,8 +29,22 @@ class Game:
         """โหลดข้อมูลเกม"""
         game_folder = path.dirname(__file__)
         img_folder = path.join(game_folder, "img")
+        sound_folder = path.join(game_folder, "sound")
+        
         self.map = Map(path.join(game_folder, self.map_file))  # โหลดแผนที่ตามไฟล์ที่เลือก
-        self.player_img = pg.image.load(path.join(img_folder, PLAYER_IMG)).convert_alpha()
+        self.player_img = pg.image.load(path.join(img_folder, "player.png")).convert_alpha()
+
+        # เสียงผลไม้
+        self.fruit_eat_sound = pg.mixer.Sound(path.join(sound_folder, "gold3.wav"))
+
+        # เสียงระเบิด
+        self.boom = pg.mixer.Sound(path.join(sound_folder, "explosion.wav"))
+
+        # เสียงชนะ
+        self.win_sound = pg.mixer.Sound(path.join(sound_folder, "win.wav"))
+
+        # เสียงแพ้
+        self.lose_sound = pg.mixer.Sound(path.join(sound_folder, "lose.wav"))
 
     # Tle
     def quit(self):
@@ -162,6 +159,9 @@ class Game:
         for hit in hits:
             self.update_score(1)    # เพิ่มคะแนน 1 เมื่อชนกับผลไม้
 
+            # เล่นเสียงเมื่อเก็บผลไม้
+            self.fruit_eat_sound.play()
+
             # ใน update function ของ Game class
             if isinstance(hit, SpecialFruit):
                 # ใช้เอฟเฟกต์ผลไม้พิเศษกับผู้เล่น
@@ -171,13 +171,13 @@ class Game:
                 # สร้างผลไม้พิเศษใหม่
                 self.respawn_special_fruit()
 
-        # ตรวจสอบว่าเก็บผลไม้ครบหรือยัง
-        if not self.fruits:  # ถ้าเก็บครบแล้ว
-            self.game_over("YOU WIN!")  # แสดงข้อความชนะ
-
-        # ตรวจสอบว่าแพ้หรือไม่
-        if not self.player.alive:  # ถ้าผู้เล่นเสียชีวิต
+        # ตรวจสอบเงื่อนไขการจบเกม
+        if not self.player.alive:  # ผู้เล่นเสียชีวิตหมด
             self.game_over("GAME OVER")  # แสดงข้อความแพ้
+            self.playing = False  # จบเกมหลังจากรอการตอบสนอง
+        elif not self.fruits:  # ผลไม้หมด
+            self.game_over("YOU WIN!")  # แสดงข้อความชนะ
+            self.playing = False  # จบเกมหลังจากรอการตอบสนอง
 
         # ตรวจสอบว่าเก็บผลไม้ครบหรือยัง
         if not self.fruits:  # ถ้าไม่มีผลไม้เหลือในกลุ่ม
@@ -190,6 +190,8 @@ class Game:
             self.player.take_damage()  # ลดจำนวนชีวิตของผู้เล่น
             print(f"Player hit by ghost! Lives remaining: {self.player.lives}")
 
+            self.boom.play()
+
             # ถ้าผู้เล่นยังมีชีวิตเหลือ รีเซ็ตตำแหน่ง
             if self.player.lives > 0:
                 self.reset_positions()
@@ -198,6 +200,7 @@ class Game:
         trap_hits = pg.sprite.spritecollide(self.player, self.traps, False)  # False เพราะไม่ต้องการลบกับดัก
         for trap in trap_hits:
             trap.on_player_collide(self.player)
+
             print("Player hit a trap! Lives remaining:", self.player.lives)
 
     # Tle and Iya and Tin
@@ -235,7 +238,6 @@ class Game:
             self.player.respawn(15, 26)  # ตำแหน่งเริ่มต้น
         else:
             print("Game Over")  # แสดงข้อความเมื่อเกมจบ
-            self.playing = False  # จบเกม
 
     # Iya
     def spawn_fruits(self):
@@ -324,27 +326,40 @@ class Game:
 
     def game_over(self, message):
         """จัดการเมื่อเกมจบ"""
-        # แสดงข้อความจบเกม
-        self.scr_display.fill("BLACK")  # เติมสีพื้นหลัง
-        self.draw_text(message, 60, WHITE, WIDTH // 2 - 150, HEIGHT // 2 - 30)  # แสดงข้อความ
+        # เติมสีพื้นหลังให้เป็นสีดำ
+        self.scr_display.fill(BLACK)
 
-        # แสดงปุ่ม "Restart" หรือ "Quit" (ตัวอย่าง)
-        self.draw_text("Press R to Restart or Q to Quit", 30, WHITE, WIDTH // 2 - 180, HEIGHT // 2 + 50)
+        # แสดงข้อความจบเกม
+        self.draw_text(message, 60, WHITE, WIDTH // 2 - 150, HEIGHT // 2 - 30)
+
+        # เลือกเสียงตามสถานะเกม
+        if message == "YOU WIN!":
+            self.win_sound.play()  # เล่นเสียงชนะ
+        elif message == "GAME OVER":
+            self.lose_sound.play()  # เล่นเสียงแพ้
+
+        # แสดงข้อความคำแนะนำเพิ่มเติม
+        self.draw_text("Press R to Restart, Q to Quit, or B to Menu", 30, WHITE, WIDTH // 2 - 200, HEIGHT // 2 + 50)
+
+        # อัปเดตหน้าจอเพื่อให้ข้อความแสดงผล
         pg.display.flip()
 
         # รอการตอบสนองของผู้เล่น
         waiting = True
         while waiting:
             for event in pg.event.get():
-                if event.type == pg.QUIT:
+                if event.type == pg.QUIT:  # หากปิดหน้าต่าง ออกจากเกม
                     self.quit()
                 if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_r:  # Restart เกมใหม่
+                    if event.key == pg.K_r:  # กด R เพื่อเริ่มเกมใหม่
                         waiting = False
                         self.new()
                         self.run()
-                    elif event.key == pg.K_q:  # ออกจากเกม
+                    elif event.key == pg.K_q:  # กด Q เพื่อออกจากเกม
                         self.quit()
+                    elif event.key == pg.K_b:  # เพิ่มปุ่มกลับไปที่เมนูเลือกโหมด
+                        waiting = False
+                        return
 
 # Tin
 def start_game(map_file):

@@ -1,3 +1,5 @@
+# menu.py make by Tin
+
 import pygame
 import sys
 from settings import *
@@ -14,7 +16,7 @@ pygame.display.set_caption("Circle man")
 BG = pygame.image.load("img/background3.webp")  # ภาพพื้นหลัง
 pg.mixer.music.load("img/1 - Adventure Begin.ogg")  # เพลงพื้นหลัง
 pg.mixer.music.play(-1) # เพลงเล่นซ้ำเป็น loop
-
+pg.mixer.music.set_volume(0.1)
 # ฟังก์ชันสำหรับสร้างฟอนต์
 def get_font(size):
     # ส่งคืนฟอนต์ในขนาดที่ต้องการ
@@ -38,7 +40,6 @@ def play():
 def difficulty_menu():
     """เมนูเลือกระดับความยาก"""
     while True:
-        # แสดงพื้นหลังและตำแหน่งเมาส์
         SCREEN.blit(BG, (0, 0))
         DIFFICULTY_MOUSE_POS = pygame.mouse.get_pos()
 
@@ -47,7 +48,7 @@ def difficulty_menu():
         DIFFICULTY_RECT = DIFFICULTY_TEXT.get_rect(center=(820, 200))
         SCREEN.blit(DIFFICULTY_TEXT, DIFFICULTY_RECT)
 
-        # สร้างปุ่มสำหรับระดับความยากแบบโปร่งแสง (ไม่มีพื้นหลัง)
+        # สร้างปุ่ม
         EASY_BUTTON = Button(
             pos=(820, 400),
             text_input="EASY",
@@ -77,24 +78,22 @@ def difficulty_menu():
             hovering_color="White"
         )
 
-        # อัปเดตปุ่มและตรวจสอบสถานะเมาส์
         for button in [EASY_BUTTON, MEDIUM_BUTTON, HARD_BUTTON, BACK_BUTTON]:
             button.changeColor(DIFFICULTY_MOUSE_POS)
             button.update(SCREEN)
 
-        # จัดการเหตุการณ์ในหน้าจอเมนูเลือกระดับความยาก
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if EASY_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  # คลิกปุ่ม EASY
-                    start_game("map1.txt")
-                if MEDIUM_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  # คลิกปุ่ม MEDIUM
-                    start_game("map2.txt")
-                if HARD_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  # คลิกปุ่ม HARD
-                    start_game("map3.txt")
-                if BACK_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  # คลิกปุ่ม BACK
+                if EASY_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  
+                    start_game("map1.txt")  # รอจน `start_game` เสร็จสิ้น
+                if MEDIUM_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  
+                    start_game("map2.txt")  # รอจน `start_game` เสร็จสิ้น
+                if HARD_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):  
+                    start_game("map3.txt")  # รอจน `start_game` เสร็จสิ้น
+                if BACK_BUTTON.checkForInput(DIFFICULTY_MOUSE_POS):
                     main_menu()
 
         pygame.display.update()

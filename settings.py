@@ -34,7 +34,7 @@ from settings import TILESIZE  # นำเข้าค่าขนาด TILE �
 
 # โหลดและปรับขนาดภาพผีแต่ละตัว
 # blinky_img, pinky_img, inky_img, clyde_img คือ sprite ของผีแต่ละชนิดที่ถูกโหลดและปรับขนาด
-blinky_img = pg.transform.scale(pg.image.load('img/red.png'), (TILESIZE, TILESIZE))  # โหลดรูป Blinky (ผีแดง) และปรับขนาดให้เท่ากับ TILESIZE
+blinky_img = pg.transform.scale(pg.image.load('img/red1.png'), (TILESIZE, TILESIZE))  # โหลดรูป Blinky (ผีแดง) และปรับขนาดให้เท่ากับ TILESIZE
 pinky_img = pg.transform.scale(pg.image.load('img/pink.png'), (TILESIZE, TILESIZE))  # โหลดรูป Pinky (ผีชมพู) และปรับขนาดให้เท่ากับ TILESIZE
 inky_img = pg.transform.scale(pg.image.load('img/blue.png'), (TILESIZE, TILESIZE))   # โหลดรูป Inky (ผีฟ้า) และปรับขนาดให้เท่ากับ TILESIZE
 clyde_img = pg.transform.scale(pg.image.load('img/orange.png'), (TILESIZE, TILESIZE)) # โหลดรูป Clyde (ผีส้ม) และปรับขนาดให้เท่ากับ TILESIZE

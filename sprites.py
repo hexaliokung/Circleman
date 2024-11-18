@@ -8,16 +8,20 @@ vec = pg.math.Vector2
 # Tle and Iya and Tin
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
-        pg.sprite.Sprite.__init__(self, game.all_sprites)  # เรียกใช้ constructor ของ Sprite โดยตรง
+        pg.sprite.Sprite.__init__(self, game.all_sprites)
+
         self.game = game
+
         self.image = pg.Surface(((TILESIZE // 4) * 3, (TILESIZE // 4) * 3))
         self.image = pg.image.load("img/player.png").convert_alpha()
         self.rect = self.image.get_rect()
+
         self.vel = vec(0, 0)
         self.pos = vec(x, y) * TILESIZE
+
         self.speed_boost = False
         self.boost_timer = 0
-        self.boost_time = 5000  # Default boost time of 5 seconds
+        self.boost_time = 5000
 
         # Tin จำนวนชีวิตเริ่มต้น
         self.lives = 3

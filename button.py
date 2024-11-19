@@ -15,7 +15,8 @@ class Button():
         self.font = font  # ฟอนต์ที่ใช้สร้างข้อความบนปุ่ม
         
         # กำหนดสีพื้นฐาน (เมื่อไม่ได้ชี้เมาส์) และสีเมื่อชี้เมาส์
-        self.base_color, self.hovering_color = base_color, hovering_color  # base_color: สีปกติ, hovering_color: สีเมื่อชี้เมาส์
+        # base_color: สีปกติ, hovering_color: สีเมื่อชี้เมาส์
+        self.base_color, self.hovering_color = base_color, hovering_color
         
         # ข้อความที่จะใช้แสดงบนปุ่ม (Text Input)
         self.text_input = text_input  # ข้อความที่จะแสดง เช่น "START", "EXIT", หรือ "PLAY"
@@ -34,7 +35,8 @@ class Button():
 
     # ตรวจจับการชี้
     def checkForInput(self, position):
-        if position[0] in range(self.text_rect.left, self.text_rect.right) and position[1] in range(self.text_rect.top, self.text_rect.bottom):
+        if position[0] in range(self.text_rect.left, self.text_rect.right)\
+            and position[1] in range(self.text_rect.top, self.text_rect.bottom):
             return True
         return False
 
@@ -43,7 +45,8 @@ class Button():
 
         # ตรวจสอบตำแหน่งเมาส์ที่ได้รับและเปลี่ยนสีข้อความในปุ่มตามสถานะ
         # ตรวจสอบว่าตำแหน่ง x และ y ของเมาส์อยู่ในกรอบของปุ่มหรือไม่
-        if position[0] in range(self.text_rect.left, self.text_rect.right) and position[1] in range(self.text_rect.top, self.text_rect.bottom):
+        if position[0] in range(self.text_rect.left, self.text_rect.right)\
+        and position[1] in range(self.text_rect.top, self.text_rect.bottom):
             # ถ้าเมาส์อยู่ภายในกรอบของปุ่ม
             # สร้างพื้นผิวข้อความใหม่ (self.text) ด้วยสี hovering_color
             self.text = self.font.render(self.text_input, True, self.hovering_color)

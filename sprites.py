@@ -1,39 +1,50 @@
-import pygame as pg
-import random
-import heapq
+import pygame as pg  # นำเข้าโมดูล Pygame สำหรับจัดการเกม
+import random  # ใช้สำหรับการสุ่มค่า
+import heapq  # ใช้สำหรับอัลกอริทึม A* Pathfinding
 
-from settings import *
-vec = pg.math.Vector2
+from settings import *  # นำเข้าการตั้งค่าจากไฟล์ settings.py
+vec = pg.math.Vector2  # ใช้ Vector2 สำหรับการคำนวณตำแหน่งและการเคลื่อนที่
 
-# Tle and Iya and Tin
+# ====================
+# Player Class (Tle, Iya, Tin)
+# ====================
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
-        pg.sprite.Sprite.__init__(self, game.all_sprites)
+        """
+        สร้างตัวละครผู้เล่นและกำหนดคุณสมบัติต่าง ๆ เช่น ตำแหน่ง ความเร็ว และชีวิต
+        """
+        pg.sprite.Sprite.__init__(self, game.all_sprites)  # เพิ่มผู้เล่นในกลุ่ม sprite
+        self.game = game  # เชื่อมโยงกับเกมหลัก
 
-        self.game = game
-
+        # สร้างภาพตัวละคร
         self.image = pg.Surface(((TILESIZE // 4) * 3, (TILESIZE // 4) * 3))
-        self.image = pg.image.load("img/player.png").convert_alpha()
-        self.rect = self.image.get_rect()
+        self.image = pg.image.load("img/player.png").convert_alpha()  # โหลดภาพผู้เล่น
+        self.rect = self.image.get_rect()  # สร้างสี่เหลี่ยมรอบภาพสำหรับการชนกัน
 
-        self.vel = vec(0, 0)
-        self.pos = vec(x, y) * TILESIZE
+        # กำหนดความเร็วและตำแหน่ง
+        self.vel = vec(0, 0)  # ความเร็วเริ่มต้น
+        self.pos = vec(x, y) * TILESIZE  # ตำแหน่งเริ่มต้นในหน่วย Tile
 
+        # คุณสมบัติเกี่ยวกับ Boost
         self.speed_boost = False
         self.boost_timer = 0
-        self.boost_time = 5000
+        self.boost_time = 5000  # เวลาของ Boost (5 วินาที)
 
-        # Tin จำนวนชีวิตเริ่มต้น
+        # กำหนดชีวิตและสถานะ
         self.lives = 3
-        # Tin กำหนดสถานะว่ายังมีชีวิต
         self.alive = True
 
     def get_keys(self):
-        self.vel = vec(0, 0)
-        keys = pg.key.get_pressed()
+        """
+        รับการกดปุ่มคีย์บอร์ดและกำหนดทิศทางการเคลื่อนที่ของผู้เล่น
+        """
+        self.vel = vec(0, 0)  # ตั้งค่าความเร็วเริ่มต้น
+        keys = pg.key.get_pressed()  # รับคีย์ที่ถูกกด
 
-        # ปรับตัวคูณความเร็วตาม speed_multiplier
+        # กำหนดความเร็วตาม Boost
         speed = PLAYER_SPEED * (self.speed_multiplier if self.speed_boost else 1)
+
+        # ตรวจสอบการกดปุ่มเพื่อกำหนดทิศทาง
         if keys[pg.K_LEFT] or keys[pg.K_a]:
             self.vel.x = -speed
         if keys[pg.K_RIGHT] or keys[pg.K_d]:
@@ -42,56 +53,66 @@ class Player(pg.sprite.Sprite):
             self.vel.y = -speed
         if keys[pg.K_DOWN] or keys[pg.K_s]:
             self.vel.y = speed
+
+        # ลดความเร็วเมื่อเคลื่อนที่แนวทแยง
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
 
     def move(self, dx=0, dy=0):
-        # ฟังก์ชันเคลื่อนที่ตามค่าที่ส่งเข้ามา ถ้าไม่ชนกับกำแพง
-        if not self.collide_with_walls(dx, dy):
+        """
+        ย้ายตำแหน่งผู้เล่นโดยตรวจสอบว่าชนกำแพงหรือไม่
+        """
+        if not self.collide_with_walls(dx, dy):  # ถ้าไม่ชนกำแพง
             self.x += dx
             self.y += dy
 
     def collide_with_walls(self, dir):
-        # Check for collisions with both walls and visible obstacles
-        if dir == "x":
+        """
+        ตรวจสอบการชนกับกำแพงหรือวัตถุในทิศทางที่กำหนด
+        """
+        if dir == "x":  # ตรวจสอบการชนในแกน X
             hits = pg.sprite.spritecollide(self, self.game.walls, False) or \
                    pg.sprite.spritecollide(self, self.game.obstacles, False)
             if hits:
-                if self.vel.x > 0:
+                if self.vel.x > 0:  # ถ้าเคลื่อนที่ไปทางขวา
                     self.pos.x = hits[0].rect.left - self.rect.width
-                if self.vel.x < 0:
+                if self.vel.x < 0:  # ถ้าเคลื่อนที่ไปทางซ้าย
                     self.pos.x = hits[0].rect.right
                 self.vel.x = 0
                 self.rect.x = self.pos.x
 
-        if dir == "y":
+        if dir == "y":  # ตรวจสอบการชนในแกน Y
             hits = pg.sprite.spritecollide(self, self.game.walls, False) or \
                    pg.sprite.spritecollide(self, self.game.obstacles, False)
             if hits:
-                if self.vel.y > 0:
+                if self.vel.y > 0:  # ถ้าเคลื่อนที่ลง
                     self.pos.y = hits[0].rect.top - self.rect.height
-                if self.vel.y < 0:
+                if self.vel.y < 0:  # ถ้าเคลื่อนที่ขึ้น
                     self.pos.y = hits[0].rect.bottom
                 self.vel.y = 0
                 self.rect.y = self.pos.y
                     
     def update(self):
-        self.get_keys()
-        self.pos += self.vel * self.game.dt
+        """
+        อัปเดตตำแหน่งและสถานะของผู้เล่น
+        """
+        self.get_keys()  # รับคีย์จากผู้เล่น
+        self.pos += self.vel * self.game.dt  # คำนวณตำแหน่งใหม่
+
+        # ตรวจสอบการชน
         self.rect.x = self.pos.x
         self.collide_with_walls("x")
         self.rect.y = self.pos.y
         self.collide_with_walls("y")
 
-        # ลดเวลา speed_boost ลง
+        # ตรวจสอบสถานะ Boost
         if self.speed_boost:
-            self.boost_timer += self.game.dt * 1000  # คำนวณเวลาเพิ่มในมิลลิวินาที
+            self.boost_timer += self.game.dt * 1000
             if self.boost_timer >= self.boost_time:
-                self.speed_boost = False  # ปิด speed_boost เมื่อหมดเวลา
-                self.boost_timer = 0  # รีเซ็ต timer
+                self.speed_boost = False  # หมดเวลาของ Boost
+                self.boost_timer = 0
 
-
-        # หลุดแผนที่ย้ายไปทิศตรงข้าม
+        # วาร์ปผู้เล่นเมื่อหลุดขอบแผนที่
         if self.pos.x < 0:
             self.pos.x = (self.game.map.tilewidth - 1) * TILESIZE
         elif self.pos.x > (self.game.map.tilewidth - 1) * TILESIZE:
@@ -104,174 +125,199 @@ class Player(pg.sprite.Sprite):
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
 
-    # Tin
     def take_damage(self):
-        """ลดจำนวนชีวิตลงเมื่อโดนศัตรูหรืออุปสรรค"""
+        """
+        ลดจำนวนชีวิตเมื่อผู้เล่นถูกโจมตี
+        """
         self.lives -= 1
         if self.lives <= 0:
             self.lives = 0
-            self.alive = False  # ตัวละครตาย
-            self.game.player_died()  # เรียกฟังก์ชันในเกมเมื่อผู้เล่นตาย
+            self.alive = False
+            self.game.player_died()  # เรียกฟังก์ชันเมื่อผู้เล่นตาย
 
-    # Tin
     def respawn(self, x, y):
+        """
+        คืนชีพผู้เล่นที่ตำแหน่งใหม่
+        """
         self.alive = True
-        self.pos = vec(x, y) * TILESIZE  # ตำแหน่งเริ่มต้น
+        self.pos = vec(x, y) * TILESIZE
         self.rect.topleft = self.pos
-        self.vel = vec(0, 0)  # รีเซ็ตความเร็ว
+        self.vel = vec(0, 0)
 
 # Tle
 class Wall(pg.sprite.Sprite):
     def __init__(self, game, x, y):
-        # กำหนดกลุ่มสไปร์ทที่กำแพงจะถูกเพิ่มเข้าไป (ทั้ง all_sprites และ walls)
-        self.groups = game.all_sprites, game.walls
-        pg.sprite.Sprite.__init__(self, self.groups)    # เพิ่มตัว Wall เข้ากลุ่มสไปร์ท
-        self.game = game    # เก็บข้อมูลอ้างอิงถึงอ็อบเจกต์เกมหลัก
-        self.image = pg.Surface((TILESIZE, TILESIZE))   # สร้างพื้นผิวสี่เหลี่ยมขนาด 64 * 64 สำหรับกำแพง
-        self.image.fill(BLACK)                          # และเติมสีเขียวให้กับพื้นผิวของกำแพง
-        self.rect = self.image.get_rect()   # สร้างสี่เหลี่ยมล้อมรอบพื้นผิวเพื่อใช้งานหลายอย่างเช่น การตรวจจับการชนของวัตถุ
-        self.x = x  # ตำแหน่ง X ของกำแพงในกริด
-        self.y = y  # ตำแหน่ง Y ของกำแพงในกริด
-        # อัปเดตตำแหน่งกำแพงในพิกเซลโดยคูณตำแหน่งในกริดด้วยขนาด TILESIZE
+        """
+        กำหนดคุณสมบัติของกำแพงในแผนที่
+        """
+        self.groups = game.all_sprites, game.walls  # กำหนดให้กำแพงอยู่ในกลุ่ม sprites ทั้งหมดและกลุ่ม walls
+        pg.sprite.Sprite.__init__(self, self.groups)  # เพิ่มวัตถุ Wall ลงในกลุ่ม
+
+        self.game = game  # อ้างอิงถึงอ็อบเจกต์เกมหลัก
+
+        # สร้างพื้นผิวสำหรับกำแพงและกำหนดสี
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(BLACK)
+
+        # สร้างพื้นที่สี่เหลี่ยมที่กำหนดตำแหน่งของกำแพง
+        self.rect = self.image.get_rect()
+        self.x = x  # ตำแหน่ง x ในตารางแผนที่
+        self.y = y  # ตำแหน่ง y ในตารางแผนที่
+
+        # อัปเดตตำแหน่งจริงในหน่วยพิกเซล
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
 
 # Tle
 class TimedObstacle(pg.sprite.Sprite):
     def __init__(self, game, x, y, appear_time=2000, disappear_time=2000, start_time=0):
-        # เพิ่มวัตถุอุปสรรคเข้าสู่กลุ่ม sprites และ obstacles
-        self.groups = game.all_sprites, game.obstacles
-        pg.sprite.Sprite.__init__(self, self.groups)
-        
-        self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(BLACK)  # กำหนดสีพื้นหลังของ obstacle เป็นสีดำ
-        self.rect = self.image.get_rect()
-        self.rect.x = x * TILESIZE
-        self.rect.y = y * TILESIZE
-        
-        self.appear_time = appear_time  # ระยะเวลาที่ obstacle จะปรากฏ
-        self.disappear_time = disappear_time  # ระยะเวลาที่ obstacle จะหายไป
-        self.start_time = start_time  # เวลาที่ obstacle จะเริ่มทำงาน
-        self.timer = -self.start_time  # ตั้งค่าเริ่มต้น (ลบ start_time เพื่อรอให้ถึงเวลาเริ่ม)
-        self.visible = False  # กำหนดให้ obstacle เริ่มต้นด้วยสถานะไม่แสดงผล
-
-    def update(self):
-        # เพิ่มค่าของ timer โดยแปลง delta time เป็นหน่วยมิลลิวินาที
-        self.timer += self.game.dt * 1000  
-
-        # ตรวจสอบว่า timer ถึงเวลาที่ obstacle ควรเริ่มทำงานหรือยัง
-        if self.timer >= 0:  
-            # ตรวจสอบสถานะ visible และจัดการการปรากฏ/หายของ obstacle
-            if self.visible and self.timer >= self.appear_time:
-                self.visible = False  # ตั้งค่าให้ obstacle หายไป
-                self.image.set_alpha(0)  # ตั้งค่าความโปร่งใส (ทำให้มองไม่เห็น)
-                self.timer = 0
-                # ลบ obstacle ออกจากกลุ่ม obstacles เพื่อไม่ให้ชนกับผู้เล่น
-                self.game.obstacles.remove(self)
-            elif not self.visible and self.timer >= self.disappear_time:
-                self.visible = True  # ตั้งค่าให้ obstacle ปรากฏ
-                self.image.set_alpha(255)  # ตั้งค่าความโปร่งใส (ทำให้มองเห็นได้)
-                self.image.fill(BLACK)  # เติมสีดำให้ obstacle
-                self.timer = 0
-                # เพิ่ม obstacle กลับเข้าสู่กลุ่ม obstacles เพื่อชนกับผู้เล่น
-                self.game.obstacles.add(self)
-
-# Tle
-# คลาสสำหรับกับดักที่เปิด-ปิดได้ตามเวลา
-class TimedTrap(pg.sprite.Sprite):
-    def __init__(self, game, x, y, appear_time=5000, disappear_time=3500):
-        self.groups = game.all_sprites, game.traps  # เพิ่มไปยังกลุ่ม traps
+        """
+        สร้างวัตถุสิ่งกีดขวางที่ปรากฏและหายไปตามเวลา
+        """
+        self.groups = game.all_sprites, game.obstacles  # อยู่ในกลุ่มวัตถุทั้งหมดและกลุ่ม obstacles
         pg.sprite.Sprite.__init__(self, self.groups)
 
-        self.game = game
+        self.game = game  # อ้างอิงถึงเกมหลัก
+
+        # สร้างพื้นผิวสำหรับสิ่งกีดขวาง
         self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(RED)  # สีแดงแสดงถึงกับดัก
+        self.image.fill(BLACK)  # ตั้งสีดำสำหรับพื้นหลังสิ่งกีดขวาง
         self.rect = self.image.get_rect()
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
 
+        # ตั้งค่าความถี่ในการปรากฏและหายไป
         self.appear_time = appear_time
         self.disappear_time = disappear_time
-        self.timer = 0
-        self.visible = True
+        self.start_time = start_time
+        self.timer = -self.start_time  # ตัวจับเวลาเริ่มต้น
+        self.visible = False  # เริ่มต้นในสถานะที่มองไม่เห็น
 
     def update(self):
-        # อัปเดตเวลาเปิด-ปิดของกับดัก
-        self.timer += self.game.dt * 1000  # คำนวณเวลาเป็นมิลลิวินาที
+        """
+        อัปเดตสถานะของสิ่งกีดขวางตามเวลา
+        """
+        self.timer += self.game.dt * 1000  # เพิ่มค่าเวลาในหน่วยมิลลิวินาที
 
+        # ถ้าถึงเวลาที่สิ่งกีดขวางควรปรากฏ/หายไป
+        if self.timer >= 0:
+            if self.visible and self.timer >= self.appear_time:
+                self.visible = False
+                self.image.set_alpha(0)  # ทำให้โปร่งใส
+                self.timer = 0  # รีเซ็ตตัวจับเวลา
+                self.game.obstacles.remove(self)  # ลบออกจากกลุ่ม obstacles
+
+            elif not self.visible and self.timer >= self.disappear_time:
+                self.visible = True
+                self.image.set_alpha(255)  # แสดงสิ่งกีดขวาง
+                self.image.fill(BLACK)
+                self.timer = 0  # รีเซ็ตตัวจับเวลา
+                self.game.obstacles.add(self)  # เพิ่มกลับในกลุ่ม obstacles
+
+# Tle
+class TimedTrap(pg.sprite.Sprite):
+    def __init__(self, game, x, y, appear_time=5000, disappear_time=3500):
+        """
+        สร้างกับดักที่สามารถปรากฏ/หายไปได้ตามเวลา
+        """
+        self.groups = game.all_sprites, game.traps  # อยู่ในกลุ่ม traps
+        pg.sprite.Sprite.__init__(self, self.groups)
+
+        self.game = game  # อ้างอิงถึงเกมหลัก
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(RED)  # ใช้สีแดงแทนกับดัก
+        self.rect = self.image.get_rect()
+        self.rect.x = x * TILESIZE
+        self.rect.y = y * TILESIZE
+
+        # ตั้งค่าเวลาปรากฏและหายไป
+        self.appear_time = appear_time
+        self.disappear_time = disappear_time
+        self.timer = 0  # เริ่มต้นตัวจับเวลา
+        self.visible = True  # เริ่มต้นให้มองเห็น
+
+    def update(self):
+        """
+        อัปเดตสถานะของกับดักตามเวลา
+        """
+        self.timer += self.game.dt * 1000  # เพิ่มค่าเวลาในหน่วยมิลลิวินาที
+
+        # สลับสถานะการแสดงผลเมื่อถึงเวลา
         if self.visible and self.timer >= self.appear_time:
             self.visible = False
-            self.image.set_alpha(0)  # ซ่อนกับดัก (โปร่งใส)
-            self.timer = 0
+            self.image.set_alpha(0)  # ทำให้โปร่งใส
+            self.timer = 0  # รีเซ็ตตัวจับเวลา
         elif not self.visible and self.timer >= self.disappear_time:
             self.visible = True
-            self.image.set_alpha(255)  # แสดงกับดัก
-            self.timer = 0
+            self.image.set_alpha(255)  # ทำให้มองเห็นได้
+            self.timer = 0  # รีเซ็ตตัวจับเวลา
 
     def on_player_collide(self, player):
-        """ลดหัวใจของผู้เล่นลง 1 และรีเซ็ตตำแหน่งเมื่อชนกับดัก"""
-        if self.visible:  # ตรวจสอบว่ากับดักเปิดอยู่หรือไม่
-            player.take_damage()
-            if player.lives > 0:  # ถ้าผู้เล่นยังมีชีวิต รีเซ็ตตำแหน่ง
-                self.game.reset_positions()
-            else:  # ถ้าผู้เล่นไม่มีชีวิต เกมจะจบ
-                print("Game Over")
-            
-            # เล่นเสียงระเบิด
-            self.game.boom.play()
+        """
+        ลดชีวิตผู้เล่นเมื่อชนกับดัก
+        """
+        if self.visible:  # ถ้ากับดักกำลังแสดงผล
+            player.take_damage()  # ลดชีวิตของผู้เล่น
+            if player.lives > 0:
+                self.game.reset_positions()  # รีเซ็ตตำแหน่งผู้เล่น
+            self.game.boom.play()  # เล่นเสียงระเบิด
 
 # Iya
 class Fruit(pg.sprite.Sprite):
     def __init__(self, game, x, y):
-
-        # เพิ่มเข้าสู่กลุ่มที่ใช้การตรวจจับการชนและการแสดงผล
-        self.groups = game.all_sprites, game.fruits # เพิ่มผลไม้ เข้ากลุ่มวัตถุของเกม และกลุ่มวัตถุของผลไม้
+        """
+        สร้างผลไม้ที่ผู้เล่นสามารถเก็บได้
+        """
+        self.groups = game.all_sprites, game.fruits  # เพิ่มไปในกลุ่ม fruits
         pg.sprite.Sprite.__init__(self, self.groups)
 
-        self.game = game
+        self.game = game  # อ้างอิงถึงเกมหลัก
 
-        # สร้างหน้าตาให้เป็ฯสี่เหลี่ยมขนาดเท่า TILESIZE และเปิดใช้งานพื้นหลังโปร่งใส
+        # สร้างพื้นผิวสำหรับผลไม้
         self.image = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA)
-
-        # สร้างกรอบสี่เหลี่ยมเพื่อตรวจจับการชน
         self.rect = self.image.get_rect()
 
-        # รัศมีของวงกลมคือ 1 ใน 4 ของขนาด TILESIZE
+        # วาดวงกลมแสดงผลไม้
         small_radius = TILESIZE // 4
-
-        # วาดวงกลมสีเขียวอยู่ตรงกลางของ TILESIZE โดยมีขนาดรัสมี = small_radius
         pg.draw.circle(self.image, GREEN1, (TILESIZE // 2, TILESIZE // 2), small_radius)
 
-        # ตั้งค่าตำแหน่งของผลไม้ให้ตรงกับตำแหน่งในแผนที่
+        # ตั้งตำแหน่งผลไม้
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE
 
 # Iya class SpecialFruit เป็นคลาสลูกของ class Fruit
 class SpecialFruit(Fruit):
     def __init__(self, game, x, y):
-        super().__init__(game, x, y)
+        """
+        สร้างผลไม้พิเศษที่มอบเอฟเฟกต์พิเศษแก่ผู้เล่น
+        """
+        super().__init__(game, x, y)  # เรียกใช้งานจากคลาส Fruit
 
-        self.image.fill((0, 0, 0, 0))  # ล้างพื้นหลังให้โปร่งใส
+        # เปลี่ยนสีและลักษณะของผลไม้พิเศษ
+        self.image.fill((0, 0, 0, 0))  # ตั้งค่าโปร่งใส
         pg.draw.circle(self.image, RED, (TILESIZE // 2, TILESIZE // 2), TILESIZE // 3)
 
-        # เพิ่มความสามารถแบบสุ่ม
+        # เลือกเอฟเฟกต์พิเศษแบบสุ่ม
         self.effect_type = random.choice(["speed_up", "speed_down", "ghost_speed_up", "ghost_speed_down"])
-        self.boost_time = 5000  # ระยะเวลาผลของเอฟเฟกต์ 5 วินาที
+        self.boost_time = 5000  # ระยะเวลาของเอฟเฟกต์
 
     def apply_effect(self, game):
         if self.effect_type == "speed_up":
+            # เพิ่มความเร็วให้ผู้เล่น
             game.player.speed_boost = True
             game.player.boost_timer = 0
-            game.player.speed_multiplier = 1.2  # เพิ่มความเร็วผู้เล่น
+            game.player.speed_multiplier = 1.2  # เพิ่มความเร็วผู้เล่น 20%
         elif self.effect_type == "speed_down":
+            # ลดความเร็วผู้เล่น
             game.player.speed_boost = True
             game.player.boost_timer = 0
-            game.player.speed_multiplier = 0.9  # ลดความเร็วผู้เล่น
+            game.player.speed_multiplier = 0.9  # ลดความเร็วผู้เล่น 10%
         elif self.effect_type == "ghost_speed_up":
-            game.apply_ghost_speed_effect(multiplier=1.5, duration=5000)  # เพิ่มความเร็วผี 5 วินาที
+            # เพิ่มความเร็วให้กับผี
+            game.apply_ghost_speed_effect(multiplier=1.5, duration=self.boost_time)
         elif self.effect_type == "ghost_speed_down":
-            game.apply_ghost_speed_effect(multiplier=0.5, duration=5000)  # ลดความเร็วผี 5 วินาที
+            # ลดความเร็วให้กับผี
+            game.apply_ghost_speed_effect(multiplier=0.5, duration=self.boost_time)
 
 # Pao
 class Ghost(pg.sprite.Sprite):
@@ -406,18 +452,6 @@ class Ghost(pg.sprite.Sprite):
         # ถ้าไม่มีทางเลือก ให้หยุดที่ตำแหน่งเดิม
         return self.pos
 
-
-    def draw_health_bar(self):#แสดงแถบพลังชีวิตของผี
-        bar_width = 50
-        bar_height = 5
-        fill = (self.health / 100) * bar_width
-        bar = pg.Rect(self.rect.x, self.rect.y - 10, bar_width, bar_height)
-        fill_rect = pg.Rect(self.rect.x, self.rect.y - 10, fill, bar_height)
-    
-        # วาดแถบพลังชีวิต
-        pg.draw.rect(self.game.scr_display, (255, 0, 0), bar)  # ใช้ self.game.scr_display แทน self.game.screen
-        pg.draw.rect(self.game.scr_display, (0, 255, 0), fill_rect)  # ใช้ self.game.scr_display แทน self.game.screen
-
     def take_damage(self, amount):
         """ลดพลังชีวิตของผี"""
         self.health -= amount
@@ -434,7 +468,6 @@ class Ghost(pg.sprite.Sprite):
         self.rect.topleft = self.pos
         self.target = self.pos  # เป้าหมายกลับไปที่จุดเริ่มต้น
 
-# Pao
 class Blinky(Ghost):
     def __init__(self, game, x, y):
         super().__init__(game, x, y, blinky_img, "red", speed=80)
